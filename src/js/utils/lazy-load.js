@@ -54,11 +54,11 @@ class LazyLoadManager {
     const img = document.createElement('img');
     img.alt = alt;
     img.className = `lazy ${className}`;
-    img.dataset.src = src;
-    
+    img.dataset.src = navigator.onLine ? src : './image/inconnu.png';
+
     // Image placeholder pendant le chargement
     img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwIiBoZWlnaHQ9IjEyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkxvYWRpbmcuLi48L3RleHQ+PC9zdmc+';
-    
+
     // Gestion d'erreur pour les images lazy
     img.onerror = function() {
       this.onerror = null;

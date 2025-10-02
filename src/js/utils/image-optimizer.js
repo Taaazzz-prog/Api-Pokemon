@@ -59,6 +59,14 @@ class ImageOptimizer {
   async optimizeImage(img) {
     if (img.dataset.optimized) return;
 
+    if (!navigator.onLine) {
+      if (img.dataset.src && !img.src) {
+        img.src = img.dataset.src;
+      }
+      img.dataset.optimized = 'offline';
+      return;
+    }
+
     try {
       const originalSrc = img.src || img.dataset.src;
       if (!originalSrc) return;

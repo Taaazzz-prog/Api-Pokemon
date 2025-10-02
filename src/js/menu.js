@@ -116,46 +116,46 @@ class MenuManager {
     this.menuItems.forEach(item => {
       const menuItem = document.createElement('div');
       menuItem.classList.add('menu-item');
-      menuItem.dataset.typeNormalized = item.normalized || '';
-      
+
+      const normalized = item.normalized || (window.normalizeTypeName ? window.normalizeTypeName(item.name) : item.name.toLowerCase());
+      const aliases = window.expandTypeAliases ? window.expandTypeAliases(normalized) : [normalized];
+      menuItem.dataset.typeNormalized = normalized;
+      menuItem.dataset.typeAliases = aliases.join(',');
+
       // Créer l'image du type
       const img = document.createElement('img');
       img.src = item.logo;
       img.alt = item.name;
       img.onerror = function() {
-        // Masquer l'image si elle ne charge pas
         this.style.display = 'none';
       };
-      
+
       // Créer le texte du type
       const span = document.createElement('span');
       span.textContent = item.name;
-      
+
       // Assembler l'élément du menu
       menuItem.appendChild(img);
       menuItem.appendChild(span);
       menuWrapper.appendChild(menuItem);
-      
+
       // Ajouter l'événement de filtrage par type
       menuItem.addEventListener('click', () => {
         const pokemonCards = document.querySelectorAll('.pokemon-card');
-        const typeName = item.name;
-        const normalizedType = window.normalizeTypeName ? window.normalizeTypeName(typeName) : typeName.toLowerCase();
+        const aliasesAttr = menuItem.dataset.typeAliases || '';
+        const typeAliases = aliasesAttr ? aliasesAttr.split(',').map(alias => alias.trim()).filter(Boolean) : [menuItem.dataset.typeNormalized];
 
-        // Filtrer les cartes en fonction du type
         pokemonCards.forEach(card => {
           const normalizedList = card.dataset.typesNormalized || '';
           const rawList = card.dataset.types || '';
           const types = (normalizedList ? normalizedList.split(',') : rawList.toLowerCase().split(','))
             .map(type => type.trim())
             .filter(Boolean);
-          if (types.includes(normalizedType)) {
-        card.style.display = '';
-      } else {
-        card.style.display = 'none';
-      }
-    });
-    this.highlightActiveType(menuItem);
+          const typeSet = new Set(types);
+          const shouldShow = typeAliases.some(alias => typeSet.has(alias));
+          card.style.display = shouldShow ? '' : 'none';
+        });
+        this.highlightActiveType(menuItem);
       });
     });
 
