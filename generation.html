@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="styles.css" />
+    <title>Pokémon par Génération</title>
+  </head>
+  <body>
+    <!-- En-tête avec la bannière -->
+    <header>
+      <!-- Bannière du site avec image -->
+      <section class="banner">
+        <img src="./image/banniere.png" alt="Bannière Pokémon" />
+      </section>
+    </header>
+    
+    <!-- Structure principale avec menu latéral et contenu -->
+    <div class="layout">
+      <!-- Menu de navigation latéral -->
+      <nav class="navbar">
+        <ul class="nav-links">
+          <li><a class="btn" href="./index.html">Accueil</a></li>
+          <li><a class="btn" href="./liste.html">Pokédex</a></li>
+          <li><a class="btn" href="./generation.html">Génération</a></li>
+          <li>
+            <button class="btn" id="compare-btn">
+              <span class="compare-label">🔄 Comparateur</span>
+              <span class="compare-count" aria-live="polite">0</span>
+            </button>
+          </li>
+          <li><button class="btn" id="history-btn">📚 Historique</button></li>
+          <li class="nav-options">
+            <button class="btn options-toggle" id="options-toggle" type="button" aria-expanded="false">⚙️ Options</button>
+            <div class="options-panel" id="options-panel" hidden>
+              <div class="options-group">
+                <h3>Affichage</h3>
+                <div id="theme-toggle-slot"></div>
+              </div>
+              <div class="options-group">
+                <h3>Favoris</h3>
+                <p class="options-summary" id="favorites-summary">Aucun favori enregistré</p>
+                <button class="btn btn-secondary options-open-favorites" id="favorites-btn" type="button">
+                  <span>⭐ Ouvrir mes favoris</span>
+                  <span class="options-badge" data-favorites-count>0</span>
+                </button>
+              </div>
+            </div>
+          </li>
+        </ul>
+      </nav>
+      
+      <!-- Contenu principal de la page -->
+      <main>
+        <!-- Titre de la page -->
+        <h1 class="text">Pokémon par Génération</h1>
+        
+        <!-- Conteneur pour les boutons de génération (rempli par JavaScript) -->
+        <div id="generation-menu"></div>
+        
+        <!-- Conteneur pour afficher les Pokémons de la génération sélectionnée -->
+        <div id="generation-container"></div>
+      </main>
+    </div>
+    
+    <!-- Pied de page -->
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <span class="footer-brand">© 2025 Le Repaire des Dresseurs</span>
+        <nav class="footer-links" aria-label="Liens légaux">
+          <a href="#">Mentions légales</a>
+          <a href="#">Politique de confidentialité</a>
+          <a href="#">Conditions d'utilisation</a>
+          <a href="mailto:contact@pokedex.fr">Contact</a>
+        </nav>
+      </div>
+      <p class="footer-note">Site non commercial réalisé à des fins pédagogiques. Données fournies par <a href="https://pokebuildapi.fr" target="_blank" rel="noopener">PokeBuild API</a>.</p>
+    </footer>
+    
+    <!-- Scripts JavaScript -->
+    <script src="script.js"></script>
+    <script src="theme-manager.js"></script>
+    <script src="favorites.js"></script>
+    <script src="options-panel.js"></script>
+    <script src="pokemon-fallback-data.js"></script>
+    <script src="pokemon-comparator.js"></script>
+    <script src="search-history.js"></script>
+    <script src="image-optimizer.js"></script>
+    <script src="asset-minifier.js"></script>
+    <script src="cdn-manager.js"></script>
+    <script src="app-initializer.js"></script>
+    <script src="mobile-menu.js"></script>
+    <script src="generation.js"></script>
+    
+    <script>
+      // Initialiser les boutons de navigation
+      document.addEventListener('DOMContentLoaded', function() {
+        // Attendre que tous les gestionnaires soient initialisés
+        function initializeButtons() {
+          // Bouton Favoris
+          const favBtn = document.getElementById('favorites-btn');
+          if (favBtn) {
+            favBtn.addEventListener('click', () => {
+              if (window.favoritesManager) {
+                window.favoritesManager.showFavoritesModal();
+              } else {
+                console.warn('Gestionnaire de favoris non initialisé');
+              }
+            });
+          }
+          
+          // Bouton Comparateur
+          const compareBtn = document.getElementById('compare-btn');
+          if (compareBtn) {
+            compareBtn.addEventListener('click', () => {
+              if (window.pokemonComparator) {
+                window.pokemonComparator.showModal();
+              } else {
+                console.warn('Comparateur non initialisé');
+              }
+            });
+          }
+          
+          // Bouton Historique
+          const historyBtn = document.getElementById('history-btn');
+          if (historyBtn) {
+            historyBtn.addEventListener('click', () => {
+              if (window.searchHistoryManager) {
+                window.searchHistoryManager.showModal();
+              } else {
+                console.warn('Gestionnaire d\'historique non initialisé');
+              }
+            });
+          }
+        }
+
+        // Initialiser immédiatement et réessayer après un délai
+        initializeButtons();
+        setTimeout(initializeButtons, 1000);
+      });
+    </script>
+  </body>
+</html>
+
