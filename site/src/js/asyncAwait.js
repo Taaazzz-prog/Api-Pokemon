@@ -262,6 +262,10 @@ class PokemonManager {
         console.error(`Erreur lors de la création de la carte pour le Pokémon ${pokemon.id}:`, e);
       }
     });
+    if (window.lazyLoadManager && typeof window.lazyLoadManager.refresh === 'function') {
+      window.lazyLoadManager.refresh();
+    }
+
   }
 
   // Méthode pour ouvrir une popup avec les détails d'un Pokémon

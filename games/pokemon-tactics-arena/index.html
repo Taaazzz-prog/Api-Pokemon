@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pokemon Tactics Arena</title>
+    <link rel="stylesheet" href="styles/main.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>Pokemon Tactics Arena</h1>
+      <p>Assemblez votre escouade et affrontez une equipe adverse dans un duel tactique au tour par tour.</p>
+    </header>
+
+    <main class="layout">
+      <section class="panel progression-panel" id="progress-panel">
+        <div class="panel-header">
+          <h2>Progression</h2>
+          <button id="reset-progress" class="btn">Reinitialiser</button>
+        </div>
+        <dl class="progress-grid">
+          <div>
+            <dt>Niveau</dt>
+            <dd data-progress="level">1</dd>
+          </div>
+          <div>
+            <dt>XP (palier)</dt>
+            <dd><span data-progress="xp">0</span> / <span data-progress="xpNext">300</span></dd>
+          </div>
+          <div>
+            <dt>Combats</dt>
+            <dd data-progress="battles">0</dd>
+          </div>
+          <div>
+            <dt>Victoires</dt>
+            <dd data-progress="victories">0</dd>
+          </div>
+          <div>
+            <dt>Defaites</dt>
+            <dd data-progress="defeats">0</dd>
+          </div>
+          <div>
+            <dt>Nuls</dt>
+            <dd data-progress="draws">0</dd>
+          </div>
+          <div>
+            <dt>Serie</dt>
+            <dd data-progress="streak">0</dd>
+          </div>
+          <div>
+            <dt>Meilleure serie</dt>
+            <dd data-progress="bestStreak">0</dd>
+          </div>
+          <div>
+            <dt>Evolutions</dt>
+            <dd data-progress="evolutions">0</dd>
+          </div>
+        </dl>
+        <div class="xp-display">
+          <div class="xp-progress">
+            <div class="xp-progress-fill" data-progress="xpBar"></div>
+          </div>
+        </div>
+        <dl class="unlock-grid">
+          <div>
+            <dt>Generations</dt>
+            <dd data-progress="generations">Gen 1</dd>
+          </div>
+          <div>
+            <dt>Modes</dt>
+            <dd data-progress="modes">Aucun</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="panel mode-panel" id="mode-panel" aria-live="polite">
+        <div class="panel-header">
+          <h2>Modes de jeu</h2>
+          <span class="hint">Débloquez et lancez des défis pour gagner plus d'XP</span>
+        </div>
+        <div class="mode-grid">
+          <article class="mode-card" data-mode="survival">
+            <header class="mode-card__header">
+              <h3>Mode Survie</h3>
+              <span class="mode-status" data-mode-status="survival">Verrouillé</span>
+            </header>
+            <p>Affrontez trois vagues successives. Bonus XP si vous survivez aux trois.</p>
+            <div class="mode-actions">
+              <button id="start-survival" class="btn btn-secondary" disabled>Commencer</button>
+              <button id="quit-survival" class="btn" hidden>Quitter</button>
+            </div>
+            <ol id="survival-progress" class="mode-progress"></ol>
+          </article>
+
+          <article class="mode-card" data-mode="tournament">
+            <header class="mode-card__header">
+              <h3>Mode Tournoi</h3>
+              <span class="mode-status" data-mode-status="tournament">Verrouillé</span>
+            </header>
+            <p>Quart, demi, finale : enchaînez trois combats pour devenir champion.</p>
+            <div class="mode-actions">
+              <button id="start-tournament" class="btn btn-secondary" disabled>Commencer</button>
+              <button id="quit-tournament" class="btn" hidden>Quitter</button>
+            </div>
+            <ol id="tournament-progress" class="mode-progress"></ol>
+          </article>
+        </div>
+      </section>
+
+      <section class="panel evolution-panel" id="evolution-panel" aria-live="polite">
+        <div class="panel-header">
+          <h2>Centre d'evolution</h2>
+          <span class="hint">Remportez des combats pour debloquer des evolutions</span>
+        </div>
+        <div id="evolution-list" class="evolution-grid">
+          <p class="empty-evolution">Aucune evolution disponible pour le moment.</p>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Votre equipe</h2>
+          <div class="actions">
+            <button id="refresh-player" class="btn">Equipe equilibree</button>
+            <button id="recruit-evolution" class="btn btn-secondary">Equipe evolutive</button>
+          </div>
+        </div>
+        <div id="player-team" class="team-grid" aria-live="polite"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Equipe adverse</h2>
+          <button id="refresh-opponent" class="btn">Nouvelle equipe aleatoire</button>
+        </div>
+        <div id="opponent-team" class="team-grid" aria-live="polite"></div>
+      </section>
+
+      <section class="panel actions-panel">
+        <div class="panel-header">
+          <h2>Champ de bataille</h2>
+          <div class="actions">
+            <button id="start-battle" class="btn btn-primary">Lancer le combat</button>
+            <button id="reset-log" class="btn">Effacer le journal</button>
+          </div>
+        </div>
+        <div id="battle-result" class="battle-result" aria-live="polite"></div>
+        <ol id="battle-log" class="battle-log" aria-live="polite"></ol>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <p>Prototype tactique base sur l API <a href="https://pokebuildapi.fr" target="_blank" rel="noopener">PokeBuild</a>.</p>
+    </footer>
+
+        <div id="battle-modal" class="battle-modal" hidden>
+      <div class="battle-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="battle-modal-title">
+        <header class="battle-modal__header">
+          <h2 id="battle-modal-title">Combat</h2>
+          <button type="button" id="battle-modal-close" class="btn">Passer</button>
+        </header>
+        <div class="battle-modal__content">
+          <div class="battle-modal__teams">
+            <section class="battle-modal__team battle-modal__team--player">
+              <h3>Votre equipe</h3>
+              <div id="battle-modal-player-team" class="battle-modal__team-list"></div>
+            </section>
+            <section class="battle-modal__team battle-modal__team--opponent">
+              <h3>Adversaire</h3>
+              <div id="battle-modal-opponent-team" class="battle-modal__team-list"></div>
+            </section>
+          </div>
+          <div class="battle-modal__log">
+            <ol id="battle-modal-log"></ol>
+          </div>
+        </div>
+        <footer class="battle-modal__footer">
+          <button type="button" id="battle-modal-next" class="btn btn-primary">Etape suivante</button>
+          <button type="button" id="battle-modal-auto" class="btn">Lecture auto</button>
+          <button type="button" id="battle-modal-finish" class="btn btn-secondary" hidden>Terminer</button>
+        </footer>
+      </div>
+    </div>
+
+    <script type="module" src="src/app.js"></script>
+  </body>
+</html>

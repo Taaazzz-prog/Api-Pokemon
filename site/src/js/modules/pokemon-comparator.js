@@ -275,6 +275,8 @@ class PokemonComparator {
 
   renderComparison() {
     const grid = document.getElementById('comparison-grid');
+    const comparisonCount = Math.max(this.selectedPokemonsList.length, 1);
+    grid.style.setProperty('--comparison-count', comparisonCount);
     
     if (this.selectedPokemonsList.length === 0) {
       grid.innerHTML = `

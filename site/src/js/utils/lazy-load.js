@@ -29,10 +29,17 @@ class LazyLoadManager {
 
   // Méthode pour observer une image
   observe(img) {
+    if (!img) {
+      return;
+    }
+
     if (this.imageObserver) {
-      this.imageObserver.observe(img);
+      try {
+        this.imageObserver.observe(img);
+      } catch (error) {
+        this.loadImage(img);
+      }
     } else {
-      // Fallback pour les navigateurs qui ne supportent pas IntersectionObserver
       this.loadImage(img);
     }
   }
@@ -49,11 +56,52 @@ class LazyLoadManager {
     }
   }
 
+  isNearViewport(element, margin = 200) {
+    if (!element || !element.isConnected) {
+      return false;
+    }
+
+    const rect = element.getBoundingClientRect();
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+    const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+    return (
+      rect.bottom >= -margin &&
+      rect.right >= -margin &&
+      rect.top <= viewportHeight + margin &&
+      rect.left <= viewportWidth + margin
+    );
+  }
+
+  refresh() {
+    if (!this.imageObserver) {
+      document.querySelectorAll('img.lazy[data-src]').forEach(img => this.loadImage(img));
+      return;
+    }
+
+    requestAnimationFrame(() => {
+      document.querySelectorAll('img.lazy[data-src]').forEach(img => {
+        if (!img.dataset.src) {
+          return;
+        }
+
+        if (this.isNearViewport(img)) {
+          this.loadImage(img);
+        } else {
+          try {
+            this.imageObserver.observe(img);
+          } catch (error) {
+            this.loadImage(img);
+          }
+        }
+      });
+    });
+  }
+
   // Méthode pour créer une image lazy
   createLazyImage(src, alt, className = '') {
     const img = document.createElement('img');
     img.alt = alt;
-    img.className = `lazy ${className}`;
+    img.className = `lazy ${className}`.trim();
     img.dataset.src = navigator.onLine ? src : './image/inconnu.png';
 
     // Image placeholder pendant le chargement
@@ -62,13 +110,19 @@ class LazyLoadManager {
     // Gestion d'erreur pour les images lazy
     img.onerror = function() {
       this.onerror = null;
-      this.src = "./image/inconnu.png";
+      this.src = './image/inconnu.png';
       this.classList.add('error');
     };
-    
+
     // Observer l'image pour le lazy loading
     this.observe(img);
-    
+
+    requestAnimationFrame(() => {
+      if (img.dataset.src && this.isNearViewport(img)) {
+        this.loadImage(img);
+      }
+    });
+
     return img;
   }
 

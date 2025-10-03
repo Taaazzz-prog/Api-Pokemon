@@ -1116,6 +1116,15 @@ main h1 {
   display: flex;
   flex-direction: column;
   gap: 24px;
+  --comparison-label-width: 160px;
+  --comparison-card-min: 200px;
+  --comparison-count: 1;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.comparison-grid > * {
+  min-width: calc(var(--comparison-label-width) + var(--comparison-count) * var(--comparison-card-min));
 }
 
 .empty-comparison {
@@ -1129,14 +1138,16 @@ main h1 {
 
 .comparison-header {
   display: grid;
-  grid-template-columns: 160px repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: var(--comparison-label-width) repeat(var(--comparison-count), minmax(var(--comparison-card-min), 1fr));
   gap: 16px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .stat-label {
   font-weight: 600;
   color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
 }
 
 .pokemon-header {
@@ -1145,6 +1156,11 @@ main h1 {
   padding: 16px;
   text-align: center;
   border: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  height: 100%;
 }
 
 .pokemon-header img {
@@ -1169,16 +1185,19 @@ main h1 {
 
 .stat-row {
   display: grid;
-  grid-template-columns: 160px repeat(auto-fit, minmax(120px, 1fr));
+  grid-template-columns: var(--comparison-label-width) repeat(var(--comparison-count), minmax(var(--comparison-card-min), 1fr));
   align-items: center;
-  gap: 12px;
+  gap: 16px;
 }
 
 .stat-value {
   background: var(--color-surface-alt);
   border-radius: var(--radius-xs);
   border: 1px solid var(--color-border);
-  padding: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .stat-value.best {
