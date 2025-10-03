@@ -36,6 +36,7 @@ class ThemeManager {
     this.currentTheme = theme;
     this.storeTheme(theme);
     this.updateToggleButton();
+    this.updateThemeAssets(theme);
   }
 
   // Basculer entre les thèmes
@@ -74,6 +75,28 @@ class ThemeManager {
 
     this.toggleButton = toggleButton;
     this.updateToggleButton();
+  }
+
+  // Mettre à jour les ressources dépendantes du thème
+  updateThemeAssets(theme) {
+    const themedNodes = document.querySelectorAll('[data-light-src][data-dark-src]');
+    themedNodes.forEach(node => {
+      const lightSrc = node.getAttribute('data-light-src');
+      const darkSrc = node.getAttribute('data-dark-src');
+      const targetSrc = theme === 'dark' ? darkSrc : lightSrc;
+
+      if (!targetSrc) {
+        return;
+      }
+
+      if (node.tagName === 'SOURCE') {
+        if (node.getAttribute('srcset') !== targetSrc) {
+          node.setAttribute('srcset', targetSrc);
+        }
+      } else if (node.getAttribute('src') !== targetSrc) {
+        node.setAttribute('src', targetSrc);
+      }
+    });
   }
 
   // Mettre à jour l'état du bouton

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="../src/css/styles.css" />
+    <title>Tests Fonctionnels Pokedex</title>
+  </head>
+  <body>
+    <header>
+      <section class="banner">
+        <img src="../assets/images/ui/banniere.png" alt="Banniere Pokedex" />
+      </section>
+    </header>
+
+    <div class="layout">
+      <nav class="navbar">
+        <ul class="nav-links">
+          <li><a class="btn" href="../index.html">Accueil</a></li>
+          <li><a class="btn" href="./liste.html">Pokedex</a></li>
+          <li><a class="btn" href="./generation.html">Generation</a></li>
+          <li>
+            <button class="btn" id="compare-btn">
+              <span class="compare-label">Comparateur</span>
+              <span class="compare-count" aria-live="polite">0</span>
+            </button>
+          </li>
+          <li><button class="btn" id="history-btn">Historique</button></li>
+          <li class="nav-options">
+            <button class="btn options-toggle" id="options-toggle" type="button" aria-expanded="false">⚙️ Options</button>
+            <div class="options-panel" id="options-panel" hidden>
+              <div class="options-group">
+                <h3>Affichage</h3>
+                <div id="theme-toggle-slot"></div>
+              </div>
+              <div class="options-group">
+                <h3>Favoris</h3>
+                <p class="options-summary" id="favorites-summary">Aucun favori enregistre</p>
+                <button class="btn btn-secondary options-open-favorites" id="favorites-btn" type="button">
+                  <span>Ouvrir mes favoris</span>
+                  <span class="options-badge" data-favorites-count>0</span>
+                </button>
+              </div>
+            </div>
+          </li>
+        </ul>
+      </nav>
+
+      <main class="content">
+        <h1 class="text">Tests et validations</h1>
+        <p class="text">
+          Cette page regroupe les scenarios de verification et les outils de debug
+          du Pokedex. Utilisez les liens ci-dessous pour acceder aux ressources de test disponibles.
+        </p>
+
+        <section class="card">
+          <h2>Tests automatiques</h2>
+          <p>
+            Les tests JavaScript principaux se lancent via <code>node tests/run-tests.js</code>.
+            Consultez le fichier <code>tests/run-tests.js</code> pour plus de details.
+          </p>
+          <a class="btn btn-secondary" href="../tests/run-tests.js">Voir le script</a>
+        </section>
+
+        <section class="card">
+          <h2>Guides de validation</h2>
+          <ul>
+            <li><a href="../docs/STRUCTURE.md">Structure du projet</a></li>
+            <li><a href="../docs/ANALYSE-SITE-POKEMON.md">Analyse du site</a></li>
+            <li><a href="../README.md">README complet</a></li>
+          </ul>
+        </section>
+
+        <section class="card">
+          <h2>Debug en direct</h2>
+          <p>
+            Activez la console du navigateur pour suivre les logs reseau et les messages de validation.
+            Les modules comme <code>window.pokemonComparator</code> et <code>window.favoritesManager</code>
+            sont accessibles depuis cette page pour faciliter le debug.
+          </p>
+        </section>
+      </main>
+    </div>
+
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <span class="footer-brand">&copy; 2025 Le Repaire des Dresseurs</span>
+        <nav class="footer-links" aria-label="Liens legaux">
+          <a href="#">Mentions legales</a>
+          <a href="#">Politique de confidentialite</a>
+          <a href="#">Conditions d'utilisation</a>
+          <a href="mailto:contact@pokedex.fr">Contact</a>
+        </nav>
+      </div>
+      <p class="footer-note">
+        Site non commercial realise a des fins pedagogiques. Donnees fournies par
+        <a href="https://pokebuildapi.fr" target="_blank" rel="noopener">PokeBuild API</a>.
+      </p>
+    </footer>
+
+    <script src="../src/js/script.js"></script>
+    <script src="../src/js/modules/theme-manager.js"></script>
+    <script src="../src/js/mobile-menu.js"></script>
+    <script src="../src/js/pokemon-fallback-data.js"></script>
+    <script src="../src/js/utils/lazy-load.js"></script>
+    <script src="../src/js/utils/pagination.js"></script>
+    <script src="../src/js/modules/favorites.js"></script>
+    <script src="../src/js/options-panel.js"></script>
+    <script src="../src/js/modules/pokemon-comparator.js"></script>
+    <script src="../src/js/modules/search-history.js"></script>
+    <script src="../src/js/utils/image-optimizer.js"></script>
+    <script src="../src/js/utils/asset-minifier.js"></script>
+    <script src="../src/js/utils/cdn-manager.js"></script>
+    <script src="../src/js/app-initializer.js"></script>
+    <script src="../src/js/menu.js"></script>
+    <script src="../src/js/asyncAwait.js"></script>
+  </body>
+</html>
+

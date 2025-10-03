@@ -75,6 +75,61 @@ class MenuManager {
     }));
   }
 
+  getPaginationManager() {
+    const manager = window.paginationManager;
+    if (manager && Array.isArray(manager.allItems) && manager.allItems.length) {
+      return manager;
+    }
+    return null;
+  }
+
+  showAllPokemons() {
+    const manager = this.getPaginationManager();
+    if (manager) {
+      manager.updateWithFilteredItems(manager.allItems.slice());
+      return true;
+    }
+    return false;
+  }
+
+  filterPokemonsByType(typeAliases) {
+    const manager = this.getPaginationManager();
+    if (manager) {
+      const filtered = manager.allItems.filter(pokemon => this.pokemonMatchesType(pokemon, typeAliases));
+      manager.updateWithFilteredItems(filtered);
+      return true;
+    }
+    return false;
+  }
+
+  pokemonMatchesType(pokemon, typeAliases) {
+    if (!pokemon) {
+      return false;
+    }
+
+    const types = (pokemon.apiTypes || []).map(type => type.name || type).filter(Boolean);
+    if (types.length === 0) {
+      return false;
+    }
+
+    const normalizedSet = new Set();
+    types.forEach(typeName => {
+      const base = window.normalizeTypeName ? window.normalizeTypeName(typeName) : (typeName || '').toLowerCase();
+      if (base) {
+        normalizedSet.add(base);
+        if (window.expandTypeAliases) {
+          window.expandTypeAliases(base).forEach(alias => {
+            if (alias) {
+              normalizedSet.add(alias);
+            }
+          });
+        }
+      }
+    });
+
+    return typeAliases.some(alias => normalizedSet.has(alias));
+  }
+
   // Méthode pour créer la structure du menu
   createMenuLayout() {
     // Créer le conteneur pour le menu des types
@@ -104,10 +159,14 @@ class MenuManager {
     allButton.dataset.typeNormalized = '';
     allButton.innerHTML = '<span>Tous</span>';
     allButton.addEventListener('click', () => {
-      // Afficher toutes les cartes Pokémon
-      document.querySelectorAll('.pokemon-card').forEach(card => {
-        card.style.display = '';
-      });
+      const handled = this.showAllPokemons();
+
+      if (!handled) {
+        document.querySelectorAll('.pokemon-card').forEach(card => {
+          card.style.display = '';
+        });
+      }
+
       this.highlightActiveType(allButton);
     });
     menuWrapper.appendChild(allButton);
@@ -141,20 +200,25 @@ class MenuManager {
 
       // Ajouter l'événement de filtrage par type
       menuItem.addEventListener('click', () => {
-        const pokemonCards = document.querySelectorAll('.pokemon-card');
         const aliasesAttr = menuItem.dataset.typeAliases || '';
         const typeAliases = aliasesAttr ? aliasesAttr.split(',').map(alias => alias.trim()).filter(Boolean) : [menuItem.dataset.typeNormalized];
 
-        pokemonCards.forEach(card => {
-          const normalizedList = card.dataset.typesNormalized || '';
-          const rawList = card.dataset.types || '';
-          const types = (normalizedList ? normalizedList.split(',') : rawList.toLowerCase().split(','))
-            .map(type => type.trim())
-            .filter(Boolean);
-          const typeSet = new Set(types);
-          const shouldShow = typeAliases.some(alias => typeSet.has(alias));
-          card.style.display = shouldShow ? '' : 'none';
-        });
+        const handled = this.filterPokemonsByType(typeAliases);
+
+        if (!handled) {
+          const pokemonCards = document.querySelectorAll('.pokemon-card');
+          pokemonCards.forEach(card => {
+            const normalizedList = card.dataset.typesNormalized || '';
+            const rawList = card.dataset.types || '';
+            const types = (normalizedList ? normalizedList.split(',') : rawList.toLowerCase().split(','))
+              .map(type => type.trim())
+              .filter(Boolean);
+            const typeSet = new Set(types);
+            const shouldShow = typeAliases.some(alias => typeSet.has(alias));
+            card.style.display = shouldShow ? '' : 'none';
+          });
+        }
+
         this.highlightActiveType(menuItem);
       });
     });
@@ -204,12 +268,12 @@ class MenuManager {
   filterPokemon(searchTerm) {
     const pokemonCards = document.querySelectorAll('.pokemon-card');
     searchTerm = searchTerm.toLowerCase();
-    
+
     // Parcourir toutes les cartes et filtrer par nom ou ID
     pokemonCards.forEach(card => {
       const pokemonName = card.querySelector('h3')?.textContent.toLowerCase() || '';
       const pokemonId = card.querySelector('p')?.textContent.toLowerCase() || '';
-      
+
       // Afficher ou masquer les cartes selon la recherche
       if (pokemonName.includes(searchTerm) || pokemonId.includes(searchTerm)) {
         card.style.display = '';
