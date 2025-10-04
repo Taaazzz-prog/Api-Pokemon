@@ -1,0 +1,402 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String    @id @default(uuid())
+  email           String    @unique
+  passwordHash    String    @map("password_hash")
+  role            UserRole  @default(USER)
+  isActive        Boolean   @default(true) @map("is_active")
+  lastLoginAt     DateTime? @map("last_login_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  profile         UserProfile?
+  roster          UserRoster[]
+  teamPresets     TeamPreset[]
+  battles         Battle[]
+  survivalRuns    SurvivalRun[]
+  tournaments     Tournament[]
+  arenaQueue      ArenaQueue[]
+  transactions    Transaction[]
+  achievements    UserAchievement[]
+
+  @@map("users")
+}
+
+model UserProfile {
+  id              String    @id @default(uuid())
+  userId          String    @unique @map("user_id")
+  username        String    @unique
+  avatar          String?
+  level           Int       @default(1)
+  experience      Int       @default(0)
+  totalBattles    Int       @default(0) @map("total_battles")
+  totalWins       Int       @default(0) @map("total_wins")
+  winRate         Float     @default(0.0) @map("win_rate")
+  pokeCredits     Int       @default(0) @map("poke_credits")
+  pokeGems        Int       @default(0) @map("poke_gems")
+  settings        Json      @default("{}")
+  stats           Json      @default("{}")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+model Pokemon {
+  id              String    @id @default(uuid())
+  pokemonId       Int       @map("pokemon_id") // PokeAPI ID
+  name            String
+  types           Json      // ["fire", "flying"]
+  stats           Json      // {hp: 78, attack: 84, ...}
+  rarity          PokemonRarity
+  generation      Int
+  imageUrl        String?   @map("image_url")
+  evolutions      Json      @default("[]") // Evolution chain
+  moves           Json      @default("[]") // Available moves
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  userRoster      UserRoster[]
+  teamMembers     TeamMember[]
+
+  @@unique([pokemonId])
+  @@map("pokemons")
+}
+
+model UserRoster {
+  id              String    @id @default(uuid())
+  userId          String    @map("user_id")
+  pokemonId       String    @map("pokemon_id")
+  nickname        String?
+  level           Int       @default(1)
+  experience      Int       @default(0)
+  customStats     Json?     @map("custom_stats") // Modified stats
+  obtainedFrom    String    @map("obtained_from") // "starter", "shop", "reward"
+  obtainedAt      DateTime  @default(now()) @map("obtained_at")
+  isLocked        Boolean   @default(false) @map("is_locked")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pokemon         Pokemon   @relation(fields: [pokemonId], references: [id])
+  teamMembers     TeamMember[]
+
+  @@unique([userId, pokemonId])
+  @@map("user_roster")
+}
+
+model TeamPreset {
+  id              String    @id @default(uuid())
+  userId          String    @map("user_id")
+  name            String
+  description     String?
+  isActive        Boolean   @default(false) @map("is_active")
+  gameMode        GameMode  @map("game_mode")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  members         TeamMember[]
+
+  @@map("team_presets")
+}
+
+model TeamMember {
+  id              String    @id @default(uuid())
+  teamPresetId    String    @map("team_preset_id")
+  userRosterId    String    @map("user_roster_id")
+  pokemonId       String    @map("pokemon_id")
+  position        Int       // 1-6 for team position
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  teamPreset      TeamPreset @relation(fields: [teamPresetId], references: [id], onDelete: Cascade)
+  userRoster      UserRoster @relation(fields: [userRosterId], references: [id])
+  pokemon         Pokemon    @relation(fields: [pokemonId], references: [id])
+
+  @@unique([teamPresetId, position])
+  @@map("team_members")
+}
+
+model Battle {
+  id              String      @id @default(uuid())
+  userId          String      @map("user_id")
+  gameMode        GameMode    @map("game_mode")
+  opponentType    OpponentType @map("opponent_type") // "ai", "player"
+  opponentId      String?     @map("opponent_id") // User ID if PvP
+  playerTeam      Json        @map("player_team") // Team composition
+  opponentTeam    Json        @map("opponent_team")
+  result          BattleResult
+  playerScore     Int         @default(0) @map("player_score")
+  opponentScore   Int         @default(0) @map("opponent_score")
+  duration        Int         @default(0) // seconds
+  payload         Json        @default("{}") // Battle log, rewards, etc.
+  startedAt       DateTime    @default(now()) @map("started_at")
+  completedAt     DateTime?   @map("completed_at")
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  user            User        @relation(fields: [userId], references: [id])
+
+  @@map("battles")
+}
+
+model SurvivalRun {
+  id              String       @id @default(uuid())
+  userId          String       @map("user_id")
+  initialTeam     Json         @map("initial_team")
+  currentWave     Int          @default(1) @map("current_wave")
+  maxWave         Int          @default(1) @map("max_wave")
+  score           Int          @default(0)
+  status          RunStatus    @default(ACTIVE)
+  rewards         Json         @default("[]")
+  payload         Json         @default("{}") // Run details, upgrades
+  startedAt       DateTime     @default(now()) @map("started_at")
+  completedAt     DateTime?    @map("completed_at")
+  createdAt       DateTime     @default(now()) @map("created_at")
+
+  // Relations
+  user            User         @relation(fields: [userId], references: [id])
+
+  @@map("survival_runs")
+}
+
+model Tournament {
+  id              String          @id @default(uuid())
+  userId          String          @map("user_id")
+  name            String
+  format          TournamentFormat
+  status          TournamentStatus @default(PENDING)
+  currentRound    Int             @default(1) @map("current_round")
+  maxRounds       Int             @map("max_rounds")
+  participants    Json            @default("[]")
+  brackets        Json            @default("{}")
+  rewards         Json            @default("[]")
+  startedAt       DateTime?       @map("started_at")
+  completedAt     DateTime?       @map("completed_at")
+  createdAt       DateTime        @default(now()) @map("created_at")
+
+  // Relations
+  user            User            @relation(fields: [userId], references: [id])
+
+  @@map("tournaments")
+}
+
+model ArenaQueue {
+  id              String      @id @default(uuid())
+  userId          String      @map("user_id")
+  team            Json
+  eloRating       Int         @default(1200) @map("elo_rating")
+  rank            String      @default("Bronze") 
+  queuedAt        DateTime    @default(now()) @map("queued_at")
+  matchedAt       DateTime?   @map("matched_at")
+  status          QueueStatus @default(WAITING)
+
+  // Relations
+  user            User        @relation(fields: [userId], references: [id])
+
+  @@map("arena_queue")
+}
+
+model Transaction {
+  id              String          @id @default(uuid())
+  userId          String          @map("user_id")
+  type            TransactionType
+  currency        Currency
+  amount          Int
+  balanceBefore   Int             @map("balance_before")
+  balanceAfter    Int             @map("balance_after")
+  source          String          // "battle_reward", "shop_purchase", etc.
+  metadata        Json            @default("{}")
+  createdAt       DateTime        @default(now()) @map("created_at")
+
+  // Relations
+  user            User            @relation(fields: [userId], references: [id])
+
+  @@map("transactions")
+}
+
+model ShopItem {
+  id              String      @id @default(uuid())
+  name            String
+  description     String?
+  category        ShopCategory
+  itemType        String      @map("item_type") // "pokemon", "upgrade", "cosmetic"
+  rarity          PokemonRarity?
+  priceCurrency   Currency    @map("price_currency")
+  priceAmount     Int         @map("price_amount")
+  isAvailable     Boolean     @default(true) @map("is_available")
+  stockLimit      Int?        @map("stock_limit")
+  metadata        Json        @default("{}") // Item-specific data
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  @@map("shop_items")
+}
+
+model Event {
+  id              String      @id @default(uuid())
+  name            String
+  description     String?
+  type            EventType
+  isActive        Boolean     @default(true) @map("is_active")
+  startDate       DateTime    @map("start_date")
+  endDate         DateTime    @map("end_date")
+  rewards         Json        @default("[]")
+  requirements    Json        @default("{}")
+  metadata        Json        @default("{}")
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  @@map("events")
+}
+
+model Achievement {
+  id              String      @id @default(uuid())
+  name            String
+  description     String
+  category        AchievementCategory
+  type            AchievementType
+  requirements    Json        // Conditions to unlock
+  rewards         Json        @default("[]")
+  isHidden        Boolean     @default(false) @map("is_hidden")
+  sortOrder       Int         @default(0) @map("sort_order")
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  userAchievements UserAchievement[]
+
+  @@map("achievements")
+}
+
+model UserAchievement {
+  id              String      @id @default(uuid())
+  userId          String      @map("user_id")
+  achievementId   String      @map("achievement_id")
+  progress        Json        @default("{}")
+  isCompleted     Boolean     @default(false) @map("is_completed")
+  isClaimed       Boolean     @default(false) @map("is_claimed")
+  completedAt     DateTime?   @map("completed_at")
+  claimedAt       DateTime?   @map("claimed_at")
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement     Achievement @relation(fields: [achievementId], references: [id])
+
+  @@unique([userId, achievementId])
+  @@map("user_achievements")
+}
+
+// Enums
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum PokemonRarity {
+  COMMON
+  UNCOMMON
+  RARE
+  EPIC
+  LEGENDARY
+}
+
+enum GameMode {
+  FREE
+  SURVIVAL
+  TOURNAMENT
+  ARENA
+}
+
+enum OpponentType {
+  AI
+  PLAYER
+}
+
+enum BattleResult {
+  WIN
+  LOSS
+  DRAW
+}
+
+enum RunStatus {
+  ACTIVE
+  COMPLETED
+  ABANDONED
+}
+
+enum TournamentFormat {
+  SINGLE_ELIMINATION
+  DOUBLE_ELIMINATION
+  ROUND_ROBIN
+}
+
+enum TournamentStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum QueueStatus {
+  WAITING
+  MATCHED
+  CANCELLED
+}
+
+enum TransactionType {
+  CREDIT
+  DEBIT
+}
+
+enum Currency {
+  POKE_CREDITS
+  POKE_GEMS
+}
+
+enum ShopCategory {
+  POKEMON
+  ITEMS
+  COSMETICS
+  BUNDLES
+}
+
+enum EventType {
+  SEASONAL
+  DAILY
+  WEEKLY
+  SPECIAL
+}
+
+enum AchievementCategory {
+  BATTLE
+  COLLECTION
+  PROGRESSION
+  SPECIAL
+}
+
+enum AchievementType {
+  COUNTER
+  MILESTONE
+  UNLOCK
+}

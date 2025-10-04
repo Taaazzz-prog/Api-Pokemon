@@ -7,130 +7,182 @@
 - **Monnaies** : deux devises principales (PokeCredits, PokeGems) avec journalisation systématique (`transactions`).
 - **Structures partagées** : exporter des types communs (TypeScript) pour éviter les divergences front/back.
 
-## 2. Schéma base de données (PostgreSQL)
+## 2. Schéma base de données (MySQL 8.0+)
 
 ### `users`
-- `id` uuid PK
-- `email` text unique
-- `password_hash` text
-- `display_name` varchar(36)
-- `avatar_url` text
-- `locale` varchar(8)
-- `created_at`, `updated_at`, `deleted_at`
+- `id` CHAR(36) PK (UUID v4)
+- `email` VARCHAR(255) UNIQUE NOT NULL
+- `password_hash` VARCHAR(255) NOT NULL
+- `display_name` VARCHAR(36) NOT NULL
+- `avatar_url` TEXT
+- `locale` VARCHAR(8) DEFAULT 'en'
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+- `deleted_at` TIMESTAMP NULL
+
+**Index :** `idx_email`, `idx_deleted_at`
 
 ### `user_profiles`
-- `user_id` FK users
-- `level` int
-- `xp` int
-- `credits` int
-- `gems` int
-- `best_survival_wave` int
-- `arena_rating` int
-- `settings` jsonb (options UI, audio…)
-- `created_at`, `updated_at`
+- `user_id` CHAR(36) PK FK users(id) ON DELETE CASCADE
+- `level` INT DEFAULT 1
+- `xp` INT DEFAULT 0
+- `credits` INT DEFAULT 0
+- `gems` INT DEFAULT 0
+- `best_survival_wave` INT DEFAULT 0
+- `arena_rating` INT DEFAULT 1000
+- `settings` JSON (options UI, audio…)
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+
+**Index :** `idx_level`, `idx_arena_rating`
 
 ### `pokemons`
-- `pokemon_ref` int PK
-- `name` text
-- `types` jsonb [{ name }]
-- `stats` jsonb `{ HP, attack, defense, special_attack, special_defense, speed }`
-- `rarity` enum (`common`, `uncommon`, `rare`, `epic`, `legendary`)
-- `generation` int
-- `base_price` int
-- `image_url` text
-- `evolutions` jsonb (liste evolutions)
+- `pokemon_ref` INT PK
+- `name` VARCHAR(100) NOT NULL
+- `types` JSON NOT NULL
+  - Format: `[{"name": "fire"}, {"name": "flying"}]`
+- `stats` JSON NOT NULL
+  - Format: `{"HP": 78, "attack": 84, "defense": 78, "special_attack": 109, "special_defense": 85, "speed": 100}`
+- `rarity` ENUM('common', 'uncommon', 'rare', 'epic', 'legendary') NOT NULL
+- `generation` TINYINT NOT NULL
+- `base_price` INT DEFAULT 0
+- `image_url` TEXT
+- `evolutions` JSON
+  - Format: `[{"level": 16, "to": 5, "method": "level"}]`
+
+**Index :** `idx_rarity`, `idx_generation`, `idx_name`
 
 ### `user_roster`
-- `id` uuid PK
-- `user_id` FK users
-- `pokemon_ref` FK pokemons
-- `rarity_override` enum nullable
-- `source` enum (`starter`, `drop`, `purchase`, `event`)
-- `acquired_at` timestamp
-- `is_locked` bool (true si Pokémon protégé)
+- `id` CHAR(36) PK (UUID v4)
+- `user_id` CHAR(36) FK users(id) ON DELETE CASCADE
+- `pokemon_ref` INT FK pokemons(pokemon_ref)
+- `rarity_override` ENUM('common', 'uncommon', 'rare', 'epic', 'legendary') NULL
+- `source` ENUM('starter', 'drop', 'purchase', 'event') NOT NULL
+- `acquired_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- `is_locked` BOOLEAN DEFAULT FALSE
+
+**Index :** `idx_user_pokemon` (user_id, pokemon_ref), `idx_source`, `idx_acquired_at`
 
 ### `team_presets`
-- `id` uuid PK
-- `user_id`
-- `name` varchar(32)
-- `context` enum (`free`, `survival`, `arena`, `tournament`)
-- `slots` jsonb (liste { position, pokemon_ref, item_ref })
-- `created_at`, `updated_at`
+- `id` CHAR(36) PK (UUID v4)
+- `user_id` CHAR(36) FK users(id) ON DELETE CASCADE
+- `name` VARCHAR(32) NOT NULL
+- `context` ENUM('free', 'survival', 'arena', 'tournament') NOT NULL
+- `slots` JSON NOT NULL
+  - Format: `[{"position": 1, "pokemon_ref": 6, "item_ref": null}]`
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+
+**Index :** `idx_user_context` (user_id, context)
 
 ### `battles`
-- `id` uuid
-- `user_id`
-- `mode` enum (`free`, `survival`, `tournament`, `arena`)
-- `payload` jsonb (équipes, seed, log, outcome)
-- `outcome` enum (`player`, `opponent`, `draw`)
-- `turns` int
-- `reward_credits` int
-- `reward_xp` int
-- `created_at`
+- `id` CHAR(36) PK (UUID v4)
+- `user_id` CHAR(36) FK users(id)
+- `mode` ENUM('free', 'survival', 'tournament', 'arena') NOT NULL
+- `payload` JSON NOT NULL
+  - Format: `{"teams": {...}, "seed": 12345, "log": [...], "outcome": "player"}`
+- `outcome` ENUM('player', 'opponent', 'draw') NOT NULL
+- `turns` INT NOT NULL
+- `reward_credits` INT DEFAULT 0
+- `reward_xp` INT DEFAULT 0
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+**Index :** `idx_user_mode` (user_id, mode), `idx_created_at`
 
 ### `survival_runs`
-- `id` uuid
-- `user_id`
-- `current_wave` int
-- `team_snapshot` jsonb
-- `status` enum (`ongoing`, `completed`, `aborted`)
-- `rewards_claimed` jsonb
-- `created_at`, `updated_at`
+- `id` CHAR(36) PK (UUID v4)
+- `user_id` CHAR(36) FK users(id) ON DELETE CASCADE
+- `current_wave` INT DEFAULT 1
+- `team_snapshot` JSON NOT NULL
+- `status` ENUM('ongoing', 'completed', 'aborted') DEFAULT 'ongoing'
+- `rewards_claimed` JSON
+  - Format: `[{"wave": 5, "rewards": [...]}]`
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+
+**Index :** `idx_user_status` (user_id, status), `idx_current_wave`
 
 ### `tournaments`
-- `id` uuid
-- `user_id`
-- `bracket_state` jsonb
-- `stage` enum (`quarter`, `semi`, `final`, `completed`)
-- `created_at`, `updated_at`
+- `id` CHAR(36) PK (UUID v4)
+- `user_id` CHAR(36) FK users(id) ON DELETE CASCADE
+- `bracket_state` JSON NOT NULL
+  - Format: `{"quarter": {...}, "semi": {...}, "final": {...}}`
+- `stage` ENUM('quarter', 'semi', 'final', 'completed') DEFAULT 'quarter'
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+
+**Index :** `idx_user_stage` (user_id, stage)
 
 ### `arena_queue`
-- `id` uuid
-- `user_id`
-- `team_snapshot` jsonb
-- `rating` int
-- `created_at`
+- `id` CHAR(36) PK (UUID v4)
+- `user_id` CHAR(36) FK users(id) ON DELETE CASCADE
+- `team_snapshot` JSON NOT NULL
+- `rating` INT NOT NULL
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+**Index :** `idx_rating`, `idx_created_at`
 
 ### `transactions`
-- `id` uuid
-- `user_id`
-- `type` enum (`reward`, `purchase`, `conversion`, `refund`)
-- `currency` enum (`credits`, `gems`)
-- `amount` int
-- `meta` jsonb (source, item, description)
-- `created_at`
+- `id` CHAR(36) PK (UUID v4)
+- `user_id` CHAR(36) FK users(id)
+- `type` ENUM('reward', 'purchase', 'conversion', 'refund') NOT NULL
+- `currency` ENUM('credits', 'gems') NOT NULL
+- `amount` INT NOT NULL
+- `meta` JSON
+  - Format: `{"source": "battle_win", "item_id": "...", "description": "..."}`
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+**Index :** `idx_user_type` (user_id, type), `idx_created_at`
 
 ### `shop_items`
-- `id` uuid
-- `category` enum (`pokemon`, `item`, `cosmetic`, `bundle`)
-- `payload` jsonb (détails)
-- `price_currency` enum
-- `price_amount` int
-- `rarity` enum
-- `availability` jsonb (dates, stock)
-- `created_at`, `updated_at`
+- `id` CHAR(36) PK (UUID v4)
+- `category` ENUM('pokemon', 'item', 'cosmetic', 'bundle') NOT NULL
+- `payload` JSON NOT NULL
+  - Format: `{"pokemon_ref": 25, "shiny": true, "level": 10}`
+- `price_currency` ENUM('credits', 'gems') NOT NULL
+- `price_amount` INT NOT NULL
+- `rarity` ENUM('common', 'uncommon', 'rare', 'epic', 'legendary')
+- `availability` JSON
+  - Format: `{"start": "2025-01-01", "end": "2025-12-31", "stock": 100}`
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+
+**Index :** `idx_category_rarity` (category, rarity), `idx_price`
 
 ### `events`
-- `id` uuid
-- `name` text
-- `description` text
-- `type` enum (`booster`, `seasonal`, `leaderboard`)
-- `config` jsonb (modificateurs, bonus)
-- `start_at`, `end_at`
+- `id` CHAR(36) PK (UUID v4)
+- `name` VARCHAR(100) NOT NULL
+- `description` TEXT
+- `type` ENUM('booster', 'seasonal', 'leaderboard') NOT NULL
+- `config` JSON
+  - Format: `{"xp_multiplier": 2.0, "drop_rate_boost": 0.5}`
+- `start_at` TIMESTAMP NOT NULL
+- `end_at` TIMESTAMP NOT NULL
+
+**Index :** `idx_type`, `idx_dates` (start_at, end_at)
 
 ### `achievements`
-- `id` uuid
-- `slug` text unique
-- `title`, `description`
-- `criteria` jsonb
-- `rewards` jsonb
-- `created_at`
+- `id` CHAR(36) PK (UUID v4)
+- `slug` VARCHAR(100) UNIQUE NOT NULL
+- `title` VARCHAR(100) NOT NULL
+- `description` TEXT
+- `criteria` JSON NOT NULL
+  - Format: `{"type": "battles_won", "target": 100, "mode": "survival"}`
+- `rewards` JSON NOT NULL
+  - Format: `[{"type": "credits", "amount": 1000}, {"type": "gems", "amount": 50}]`
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+**Index :** `idx_slug`
 
 ### `user_achievements`
-- `user_id`
-- `achievement_id`
-- `progress` jsonb `{ current, target }`
-- `unlocked_at`
+- `user_id` CHAR(36) FK users(id) ON DELETE CASCADE
+- `achievement_id` CHAR(36) FK achievements(id) ON DELETE CASCADE
+- `progress` JSON
+  - Format: `{"current": 45, "target": 100}`
+- `unlocked_at` TIMESTAMP NULL
+
+**Clé primaire composée :** (user_id, achievement_id)
+**Index :** `idx_unlocked_at`
 
 ## 3. Contrat API (REST JSON)
 
@@ -143,26 +195,26 @@
 
 ### Profil & progression
 - `GET /profile` → `{ user, stats, currencies, achievements }`
-- `PATCH /profile` → mise à jour avatar, pseudo, settings.
-- `GET /leaderboards/{mode}`
+- `PATCH /profile` → mise à jour avatar, pseudo, settings
+- `GET /leaderboards/{mode}` → classements par mode
 
 ### Roster & équipes
-- `GET /roster` → liste Pokémon possédés.
-- `POST /roster/unlock` → acquisition (starter, drop, achat).
+- `GET /roster` → liste Pokémon possédés
+- `POST /roster/unlock` → acquisition (starter, drop, achat)
 - `GET /teams` / `POST /teams` / `DELETE /teams/{id}`
-- `POST /teams/{id}/lock` → verrouille un preset.
+- `POST /teams/{id}/lock` → verrouille un preset
 
 ### Modes de jeu
 - `POST /modes/free/match`
 - `POST /modes/survival/start` → `{ run_id, wave, team_snapshot }`
-- `POST /modes/survival/next` → prochaine vague.
+- `POST /modes/survival/next` → prochaine vague
 - `POST /modes/survival/abandon`
 - `POST /modes/tournament/start` / `POST /modes/tournament/next`
 - `POST /modes/arena/queue` / `POST /modes/arena/result`
 
 ### Boutique & transactions
 - `GET /shop/catalog?category=&rarity=`
-- `POST /shop/purchase` → valide l achat, retourne transaction + récompenses.
+- `POST /shop/purchase` → valide l'achat, retourne transaction + récompenses
 - `GET /transactions?limit=`
 
 ### Centres spécialisés
@@ -174,74 +226,4 @@
 - `POST /achievements/claim`
 
 ## 4. Variables partagées (TypeScript)
-
 ```ts
-type Currency = 'credits' | 'gems';
-type Mode = 'free' | 'survival' | 'tournament' | 'arena';
-type Rarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
-
-interface UserSummary {
-  id: string;
-  displayName: string;
-  level: number;
-  xp: number;
-  credits: number;
-  gems: number;
-}
-
-interface RosterEntry {
-  id: string;
-  pokemonRef: number;
-  rarity: Rarity;
-  stats: PokemonStats;
-  types: string[];
-  acquiredAt: string;
-}
-
-interface TeamPreset {
-  id: string;
-  name: string;
-  context: Mode;
-  slots: TeamSlot[];
-}
-
-interface BattleResult {
-  battleId: string;
-  outcome: 'player' | 'opponent' | 'draw';
-  turns: number;
-  rewards: Reward[];
-  log: BattleLogEntry[];
-}
-
-interface Reward {
-  type: 'xp' | 'credits' | 'gems' | 'pokemon' | 'item';
-  amount: number;
-  payload?: unknown;
-}
-
-interface ShopItem {
-  id: string;
-  category: 'pokemon' | 'item' | 'cosmetic' | 'bundle';
-  label: string;
-  rarity: Rarity;
-  priceCurrency: Currency;
-  priceAmount: number;
-  payload: unknown;
-}
-
-interface Achievement {
-  id: string;
-  title: string;
-  description: string;
-  progress: { current: number; target: number; status: 'locked' | 'in_progress' | 'completed'; };
-  rewards: Reward[];
-}
-```
-
-Ces types doivent être regroupés dans un package partagé (`packages/contracts`) pour être importés côté frontend (validation via Zod/TypeScript) et backend (DTOs).
-
-## 5. Gestion des variables globales
-- `window.__ptaGetProgressState` : renvoi du `UserProfile` courant pour la page Survie/onboarding.
-- `window.__ptaSelectedRoster` : tableau d ids Pokémon sélectionnés pour le run Survie.
-- `window.__ptaSurvivalTeamSource` : `'roster' | 'balanced' | 'evolution'`.
-- Limiter le nombre de globales : migrer vers un store central (Redux) ou contexte SPA dès que la refonte front sera lancée.

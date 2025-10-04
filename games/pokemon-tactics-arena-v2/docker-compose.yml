@@ -1,0 +1,189 @@
+version: '3.8'
+
+networks:
+  pokemon-network:
+    external: false
+  traefik:
+    external: true
+
+services:
+  # Base de données MySQL
+  pokemon-mysql:
+    image: mysql:8.0
+    container_name: pokemon-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - pokemon-mysql-data:/var/lib/mysql
+      - ./backend/prisma/migrations:/docker-entrypoint-initdb.d
+    ports:
+      - "3306:3306"
+    networks:
+      - pokemon-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+    labels:
+      - "traefik.enable=false"
+
+  # Redis pour cache et sessions
+  pokemon-redis:
+    image: redis:7-alpine
+    container_name: pokemon-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - pokemon-redis-data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - pokemon-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    labels:
+      - "traefik.enable=false"
+
+  # Backend API
+  pokemon-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pokemon-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@pokemon-mysql:3306/${MYSQL_DATABASE}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@pokemon-redis:6379
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      FRONTEND_URL: https://${DOMAIN_NAME}
+      POKEAPI_BASE_URL: https://pokeapi.co/api/v2
+      POKEBUILD_CDN_URL: https://img.pokemondb.net/sprites/home/normal
+    volumes:
+      - pokemon-backend-logs:/app/logs
+    depends_on:
+      pokemon-mysql:
+        condition: service_healthy
+      pokemon-redis:
+        condition: service_healthy
+    networks:
+      - pokemon-network
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.pokemon-api.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.pokemon-api.entrypoints=websecure"
+      - "traefik.http.routers.pokemon-api.tls.certresolver=letsencrypt"
+      - "traefik.http.services.pokemon-api.loadbalancer.server.port=3001"
+      - "traefik.http.middlewares.pokemon-api-cors.headers.accesscontrolallowmethods=GET,OPTIONS,PUT,POST,DELETE,PATCH"
+      - "traefik.http.middlewares.pokemon-api-cors.headers.accesscontrolallowheaders=*"
+      - "traefik.http.middlewares.pokemon-api-cors.headers.accesscontrolalloworiginlist=https://${DOMAIN_NAME}"
+      - "traefik.http.middlewares.pokemon-api-cors.headers.accesscontrolmaxage=100"
+      - "traefik.http.middlewares.pokemon-api-cors.headers.addvaryheader=true"
+      - "traefik.http.routers.pokemon-api.middlewares=pokemon-api-cors"
+
+  # Frontend
+  pokemon-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: https://${DOMAIN_NAME}/api
+        VITE_WS_URL: wss://${DOMAIN_NAME}
+        VITE_ENVIRONMENT: production
+    container_name: pokemon-frontend
+    restart: unless-stopped
+    networks:
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.pokemon-frontend.rule=Host(`${DOMAIN_NAME}`)"
+      - "traefik.http.routers.pokemon-frontend.entrypoints=websecure"
+      - "traefik.http.routers.pokemon-frontend.tls.certresolver=letsencrypt"
+      - "traefik.http.services.pokemon-frontend.loadbalancer.server.port=80"
+      - "traefik.http.middlewares.pokemon-frontend-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.pokemon-frontend-headers.headers.frameDeny=true"
+      - "traefik.http.middlewares.pokemon-frontend-headers.headers.browserXssFilter=true"
+      - "traefik.http.routers.pokemon-frontend.middlewares=pokemon-frontend-headers"
+
+  # Prometheus pour monitoring
+  pokemon-prometheus:
+    image: prom/prometheus:latest
+    container_name: pokemon-prometheus
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      - '--web.external-url=https://${DOMAIN_NAME}/monitoring/prometheus'
+      - '--web.route-prefix=/monitoring/prometheus'
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - pokemon-prometheus-data:/prometheus
+    networks:
+      - pokemon-network
+      - traefik
+    depends_on:
+      - pokemon-backend
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.pokemon-prometheus.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/monitoring/prometheus`)"
+      - "traefik.http.routers.pokemon-prometheus.entrypoints=websecure"
+      - "traefik.http.routers.pokemon-prometheus.tls.certresolver=letsencrypt"
+      - "traefik.http.services.pokemon-prometheus.loadbalancer.server.port=9090"
+      - "traefik.http.middlewares.pokemon-prometheus-auth.basicauth.users=${MONITORING_AUTH}"
+      - "traefik.http.routers.pokemon-prometheus.middlewares=pokemon-prometheus-auth"
+
+  # Grafana pour dashboards
+  pokemon-grafana:
+    image: grafana/grafana:latest
+    container_name: pokemon-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
+      GF_SERVER_ROOT_URL: https://${DOMAIN_NAME}/monitoring/grafana
+      GF_SERVER_SERVE_FROM_SUB_PATH: true
+      GF_DATABASE_TYPE: mysql
+      GF_DATABASE_HOST: pokemon-mysql:3306
+      GF_DATABASE_NAME: grafana
+      GF_DATABASE_USER: ${MYSQL_USER}
+      GF_DATABASE_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - pokemon-grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    networks:
+      - pokemon-network
+      - traefik
+    depends_on:
+      - pokemon-prometheus
+      - pokemon-mysql
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.pokemon-grafana.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/monitoring/grafana`)"
+      - "traefik.http.routers.pokemon-grafana.entrypoints=websecure"
+      - "traefik.http.routers.pokemon-grafana.tls.certresolver=letsencrypt"
+      - "traefik.http.services.pokemon-grafana.loadbalancer.server.port=3000"
+
+volumes:
+  pokemon-mysql-data:
+    driver: local
+  pokemon-redis-data:
+    driver: local
+  pokemon-backend-logs:
+    driver: local
+  pokemon-prometheus-data:
+    driver: local
+  pokemon-grafana-data:
+    driver: local

@@ -1,0 +1,185 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles */
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  
+  body {
+    @apply bg-gray-50 text-gray-900;
+  }
+}
+
+@layer components {
+  /* Pokemon type colors */
+  .type-normal { @apply bg-gray-400 text-white; }
+  .type-fire { @apply bg-red-500 text-white; }
+  .type-water { @apply bg-blue-500 text-white; }
+  .type-electric { @apply bg-yellow-400 text-gray-900; }
+  .type-grass { @apply bg-green-500 text-white; }
+  .type-ice { @apply bg-blue-300 text-gray-900; }
+  .type-fighting { @apply bg-red-700 text-white; }
+  .type-poison { @apply bg-purple-500 text-white; }
+  .type-ground { @apply bg-yellow-600 text-white; }
+  .type-flying { @apply bg-indigo-400 text-white; }
+  .type-psychic { @apply bg-pink-500 text-white; }
+  .type-bug { @apply bg-green-400 text-white; }
+  .type-rock { @apply bg-yellow-800 text-white; }
+  .type-ghost { @apply bg-purple-700 text-white; }
+  .type-dragon { @apply bg-indigo-700 text-white; }
+  .type-dark { @apply bg-gray-800 text-white; }
+  .type-steel { @apply bg-gray-500 text-white; }
+  .type-fairy { @apply bg-pink-300 text-gray-900; }
+
+  /* Pokemon rarity colors */
+  .rarity-common { @apply bg-gray-500 text-white; }
+  .rarity-uncommon { @apply bg-green-500 text-white; }
+  .rarity-rare { @apply bg-blue-500 text-white; }
+  .rarity-epic { @apply bg-purple-500 text-white; }
+  .rarity-legendary { @apply bg-yellow-500 text-gray-900; }
+
+  /* Game UI components */
+  .stat-bar {
+    @apply w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700;
+  }
+  
+  .stat-fill {
+    @apply h-2.5 rounded-full transition-all duration-500 ease-out;
+  }
+
+  /* Battle animations */
+  .battle-shake {
+    animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+  }
+
+  .battle-flash {
+    animation: flash 0.3s ease-in-out;
+  }
+
+  /* Hover effects for cards */
+  .card-hover {
+    @apply transform transition-all duration-200 hover:scale-105 hover:shadow-lg;
+  }
+
+  /* Pokemon card effects */
+  .pokemon-card {
+    @apply bg-white rounded-lg shadow-md p-4 transition-all duration-200;
+    @apply hover:shadow-lg hover:scale-105 cursor-pointer;
+    @apply border border-gray-200;
+  }
+
+  .pokemon-card.selected {
+    @apply ring-2 ring-blue-500 ring-opacity-75;
+  }
+
+  .pokemon-card.disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+
+  /* Navigation styles */
+  .nav-link {
+    @apply px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200;
+  }
+
+  .nav-link.active {
+    @apply bg-blue-100 text-blue-700;
+  }
+
+  .nav-link:not(.active) {
+    @apply text-gray-600 hover:text-gray-900 hover:bg-gray-100;
+  }
+
+  /* Form styles */
+  .form-group {
+    @apply space-y-2;
+  }
+
+  .form-label {
+    @apply block text-sm font-medium text-gray-700;
+  }
+
+  .form-input {
+    @apply block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm;
+    @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .form-error {
+    @apply text-sm text-red-600;
+  }
+
+  /* Loading states */
+  .skeleton {
+    @apply animate-pulse bg-gray-200 rounded;
+  }
+
+  /* Battle UI */
+  .hp-bar {
+    @apply relative overflow-hidden bg-gray-200 rounded-full h-3;
+  }
+
+  .hp-fill {
+    @apply h-full rounded-full transition-all duration-1000 ease-out;
+  }
+
+  .hp-high { @apply bg-green-500; }
+  .hp-medium { @apply bg-yellow-500; }
+  .hp-low { @apply bg-red-500; }
+
+  /* Status effects */
+  .status-burned { @apply bg-red-100 border-red-300 text-red-800; }
+  .status-frozen { @apply bg-blue-100 border-blue-300 text-blue-800; }
+  .status-paralyzed { @apply bg-yellow-100 border-yellow-300 text-yellow-800; }
+  .status-poisoned { @apply bg-purple-100 border-purple-300 text-purple-800; }
+  .status-asleep { @apply bg-gray-100 border-gray-300 text-gray-800; }
+}
+
+@layer utilities {
+  /* Custom animations */
+  @keyframes shake {
+    10%, 90% {
+      transform: translate3d(-1px, 0, 0);
+    }
+    20%, 80% {
+      transform: translate3d(2px, 0, 0);
+    }
+    30%, 50%, 70% {
+      transform: translate3d(-4px, 0, 0);
+    }
+    40%, 60% {
+      transform: translate3d(4px, 0, 0);
+    }
+  }
+
+  @keyframes flash {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.3;
+    }
+  }
+
+  /* Scroll utilities */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Glass morphism effect */
+  .glass {
+    @apply bg-white bg-opacity-20 backdrop-blur-lg border border-white border-opacity-20;
+  }
+
+  /* Gradient text */
+  .gradient-text {
+    @apply bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent;
+  }
+}
