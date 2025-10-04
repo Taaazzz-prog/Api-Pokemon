@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pokemon Tactics Arena — Mode libre (prototype)</title>
+    <link rel="stylesheet" href="../styles/main.css" />
+    <link rel="stylesheet" href="../styles/multipage.css" />
+    <style>
+      .pta-iframe-wrapper {
+        position: relative;
+        width: 100%;
+        min-height: 70vh;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 20px 40px rgba(14, 26, 43, 0.18);
+      }
+
+      .pta-iframe-wrapper iframe {
+        width: 100%;
+        height: 75vh;
+        border: none;
+        background: #0e1a2b;
+      }
+
+      .pta-disclaimer {
+        margin: 1rem 0;
+        font-size: 0.95rem;
+        color: rgba(30, 41, 59, 0.75);
+      }
+    </style>
+  </head>
+  <body class="pta-page">
+    <header class="pta-header">
+      <div class="pta-header__inner">
+        <h1>Mode libre</h1>
+        <p>Prototype actuel — le gameplay sera migré progressivement vers la nouvelle architecture.</p>
+      </div>
+      <nav class="pta-nav" aria-label="Navigation principale">
+        <ul>
+          <li><a class="pta-nav__link" href="./index.html">Hub</a></li>
+          <li><a class="pta-nav__link" href="./survival.html">Survie</a></li>
+          <li><a class="pta-nav__link" href="./tournament.html">Tournoi</a></li>
+          <li><a class="pta-nav__link" href="./team-builder.html">Gestion d'équipe</a></li>
+          <li><a class="pta-nav__link" href="./free-play.html">Mode libre</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <main class="pta-main">
+      <section class="pta-panel">
+        <p class="pta-disclaimer">
+          Cette vue embarque le prototype historique. Les futures itérations déplaceront progressivement
+          les fonctionnalités vers les nouvelles pages (Survie, Tournoi, Gestion d'équipe).
+        </p>
+        <div class="pta-iframe-wrapper">
+          <iframe src="../index.html" title="Prototype original Pokemon Tactics Arena"></iframe>
+        </div>
+      </section>
+    </main>
+
+    <footer class="pta-footer">
+      <small>Prototype original chargé dans l'iframe — navigation <a href="./index.html">retour au hub</a>.</small>
+    </footer>
+
+    <script type="module" src="../src/app/free-play/bootstrap.js"></script>
+  </body>
+</html>

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pokemon Tactics Arena — Mode Survie</title>
+    <link rel="stylesheet" href="../styles/main.css" />
+    <link rel="stylesheet" href="../styles/multipage.css" />
+  </head>
+  <body>
+    <header class="pta-header">
+      <div class="pta-header__inner">
+        <h1>Mode Survie</h1>
+        <p>Préparez vos équipes et affrontez des vagues infinies de challengers.</p>
+      </div>
+      <nav class="pta-nav" aria-label="Navigation principale">
+        <ul>
+          <li><a class="pta-nav__link" href="./index.html">Hub</a></li>
+          <li><a class="pta-nav__link" href="./survival.html">Survie</a></li>
+          <li><a class="pta-nav__link" href="./tournament.html">Tournoi</a></li>
+          <li><a class="pta-nav__link" href="./team-builder.html">Gestion d'équipe</a></li>
+          <li><a class="pta-nav__link" href="./free-play.html">Mode libre</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <main class="layout">
+      <section class="panel progression-panel" id="progress-panel">
+        <div class="panel-header">
+          <h2>Progression</h2>
+          <button id="reset-progress" class="btn">Reinitialiser</button>
+        </div>
+        <dl class="progress-grid">
+          <div>
+            <dt>Niveau</dt>
+            <dd data-progress="level">1</dd>
+          </div>
+          <div>
+            <dt>XP (palier)</dt>
+            <dd><span data-progress="xp">0</span> / <span data-progress="xpNext">300</span></dd>
+          </div>
+          <div>
+            <dt>Combats</dt>
+            <dd data-progress="battles">0</dd>
+          </div>
+          <div>
+            <dt>Victoires</dt>
+            <dd data-progress="victories">0</dd>
+          </div>
+          <div>
+            <dt>Defaites</dt>
+            <dd data-progress="defeats">0</dd>
+          </div>
+          <div>
+            <dt>Nuls</dt>
+            <dd data-progress="draws">0</dd>
+          </div>
+          <div>
+            <dt>Serie</dt>
+            <dd data-progress="streak">0</dd>
+          </div>
+          <div>
+            <dt>Meilleure serie</dt>
+            <dd data-progress="bestStreak">0</dd>
+          </div>
+          <div>
+            <dt>Evolutions</dt>
+            <dd data-progress="evolutions">0</dd>
+          </div>
+        </dl>
+        <div class="xp-display">
+          <div class="xp-progress">
+            <div class="xp-progress-fill" data-progress="xpBar"></div>
+          </div>
+        </div>
+        <dl class="unlock-grid">
+          <div>
+            <dt>Generations</dt>
+            <dd data-progress="generations">Gen 1</dd>
+          </div>
+          <div>
+            <dt>Modes</dt>
+            <dd data-progress="modes">Aucun</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="panel mode-panel" id="mode-panel" aria-live="polite">
+        <div class="panel-header">
+          <h2>Mode Survie</h2>
+          <span class="hint">Enchaînez les vagues pour gagner un maximum de récompenses</span>
+        </div>
+        <div class="mode-grid">
+          <article class="mode-card" data-mode="survival">
+            <header class="mode-card__header">
+              <h3>Mode Survie</h3>
+              <span class="mode-status" data-mode-status="survival">Verrouillé</span>
+            </header>
+            <p>Affrontez des vagues successives sans fin. Bonus de PokeCredits et drops rares tous les 5 paliers.</p>
+            <div class="mode-actions">
+              <button id="start-survival" class="btn btn-secondary" disabled>Commencer</button>
+              <button id="quit-survival" class="btn" hidden>Quitter</button>
+            </div>
+            <ol id="survival-progress" class="mode-progress"></ol>
+          </article>
+          <article class="mode-card" data-mode="tournament" hidden>
+            <header class="mode-card__header">
+              <h3>Mode Tournoi</h3>
+              <span class="mode-status" data-mode-status="tournament">Verrouillé</span>
+            </header>
+            <p>Cette carte est masquée sur la page Survie. Retrouvez le mode Tournoi dans le hub.</p>
+            <div class="mode-actions">
+              <button id="start-tournament" class="btn btn-secondary" hidden>Commencer</button>
+              <button id="quit-tournament" class="btn" hidden>Quitter</button>
+            </div>
+            <ol id="tournament-progress" class="mode-progress"></ol>
+          </article>
+        </div>
+      </section>
+
+      <section class="panel" id="survival-roster-panel">
+        <div class="panel-header">
+          <h2>Roster débloqué</h2>
+          <div class="actions">
+            <button id="shuffle-roster" class="btn btn-secondary">Tirage aléatoire</button>
+          </div>
+        </div>
+        <div class="team-source-switch">
+          <label><input type="radio" name="survival-team-source" value="roster" checked /> Pokémon débloqués</label>
+          <label><input type="radio" name="survival-team-source" value="balanced" /> Équipe équilibrée</label>
+          <label><input type="radio" name="survival-team-source" value="evolution" /> Équipe évolutive</label>
+        </div>
+        <p class="panel-description">Sélectionnez jusqu'à trois Pokémon débloqués pour constituer votre escouade ou choisissez une équipe générée.</p>
+        <div id="survival-roster" class="team-grid"></div>
+      </section>
+
+      <section class="panel evolution-panel" id="evolution-panel" aria-live="polite">
+        <div class="panel-header">
+          <h2>Centre d'evolution</h2>
+          <span class="hint">Validez vos évolutions remportées pendant le run</span>
+        </div>
+        <div id="evolution-list" class="evolution-grid">
+          <p class="empty-evolution">Remportez un combat pour debloquer une evolution.</p>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Votre equipe</h2>
+          <div class="actions">
+            <button id="refresh-player" class="btn">Equipe equilibree</button>
+            <button id="recruit-evolution" class="btn btn-secondary">Equipe evolutive</button>
+          </div>
+        </div>
+        <div id="player-team" class="team-grid" aria-live="polite"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Equipe adverse</h2>
+          <button id="refresh-opponent" class="btn">Nouvelle equipe aleatoire</button>
+        </div>
+        <div id="opponent-team" class="team-grid" aria-live="polite"></div>
+      </section>
+
+      <section class="panel actions-panel">
+        <div class="panel-header">
+          <h2>Champ de bataille</h2>
+          <div class="actions">
+            <button id="start-battle" class="btn btn-primary">Lancer le combat</button>
+            <button id="reset-log" class="btn">Effacer le journal</button>
+          </div>
+        </div>
+        <div id="battle-result" class="battle-result" aria-live="polite"></div>
+        <ol id="battle-log" class="battle-log" aria-live="polite"></ol>
+      </section>
+    </main>
+
+    <div id="battle-modal" class="battle-modal" hidden>
+      <div class="battle-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="battle-modal-title">
+        <header class="battle-modal__header">
+          <h2 id="battle-modal-title">Combat</h2>
+          <button type="button" id="battle-modal-close" class="btn">Passer</button>
+        </header>
+        <div class="battle-modal__content">
+          <div class="battle-modal__teams">
+            <section class="battle-modal__team battle-modal__team--player">
+              <h3>Votre equipe</h3>
+              <div id="battle-modal-player-team" class="battle-modal__team-list"></div>
+            </section>
+            <section class="battle-modal__team battle-modal__team--opponent">
+              <h3>Adversaire</h3>
+              <div id="battle-modal-opponent-team" class="battle-modal__team-list"></div>
+            </section>
+          </div>
+          <div class="battle-modal__log">
+            <ol id="battle-modal-log"></ol>
+          </div>
+        </div>
+        <footer class="battle-modal__footer">
+          <button type="button" id="battle-modal-next" class="btn btn-primary">Etape suivante</button>
+          <button type="button" id="battle-modal-auto" class="btn">Lecture auto</button>
+          <button type="button" id="battle-modal-finish" class="btn btn-secondary" hidden>Terminer</button>
+        </footer>
+      </div>
+    </div>
+
+    <footer class="app-footer">
+      <p>Prototype Survie — refonte en cours. Retour au <a href="./index.html">hub</a>.</p>
+    </footer>
+
+    <script type="module" src="../src/app.js"></script>
+    <script type="module" src="../src/app/survival/bootstrap.js"></script>
+  </body>
+</html>

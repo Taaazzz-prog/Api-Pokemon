@@ -1,0 +1,218 @@
+/* Styles complémentaires pour la navigation multi-pages PTA */
+
+.pta-page {
+  min-height: 100vh;
+  margin: 0;
+  background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+  color: #0f172a;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.pta-header {
+  background: #0e1a2b;
+  color: #fff;
+  padding: 2rem 1.5rem 1rem;
+}
+
+.pta-header__inner {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.pta-header__inner h1 {
+  margin: 0 0 0.5rem;
+  font-size: 2rem;
+}
+
+.pta-nav {
+  margin-top: 1.25rem;
+}
+
+.pta-nav ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.pta-nav__link {
+  display: inline-block;
+  padding: 0.6rem 1rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  text-decoration: none;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.pta-nav__link:hover,
+.pta-nav__link:focus {
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-2px);
+}
+
+.pta-nav__link.is-active {
+  background: #feca57;
+  color: #0e1a2b;
+  font-weight: 600;
+}
+
+.pta-main {
+  max-width: 1100px;
+  margin: 2rem auto 4rem;
+  padding: 0 1.5rem;
+}
+
+.pta-main > * {
+  margin: 0;
+}
+
+.pta-main > * + * {
+  margin-top: 2.5rem;
+}
+
+.pta-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 2rem;
+}
+
+.pta-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 1.75rem;
+  box-shadow: 0 15px 30px rgba(14, 26, 43, 0.1);
+  color: #0f172a;
+  line-height: 1.6;
+}
+
+.pta-card h2 {
+  margin-top: 0;
+  color: #0f172a;
+}
+
+.pta-btn {
+  display: inline-block;
+  margin-top: 1rem;
+  padding: 0.6rem 1.2rem;
+  background: #3b82f6;
+  color: #fff;
+  text-decoration: none;
+  border-radius: 8px;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.pta-btn:hover,
+.pta-btn:focus {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.pta-panel {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 10px 24px rgba(14, 26, 43, 0.08);
+  color: #0f172a;
+  line-height: 1.65;
+}
+
+.pta-panel h2 {
+  margin-top: 0;
+  color: #0f172a;
+}
+
+.pta-panel ul {
+  margin: 0.8rem 0 0;
+  padding-left: 1.2rem;
+  color: #1f2937;
+}
+
+.pta-panel li + li {
+  margin-top: 0.35rem;
+}
+
+.pta-main a:not(.pta-btn) {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.pta-main a:not(.pta-btn):hover,
+.pta-main a:not(.pta-btn):focus {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
+.pta-footer {
+  text-align: center;
+  padding: 2rem 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+  background: #0e1a2b;
+}
+
+.pta-footer a {
+  color: #feca57;
+}
+
+@media (prefers-color-scheme: light) {
+  .pta-header {
+    background: #f8fafc;
+    color: #1e293b;
+  }
+
+  .pta-page {
+    background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%);
+    color: #1e293b;
+  }
+
+  .pta-nav__link {
+    color: inherit;
+    background: rgba(30, 41, 59, 0.08);
+  }
+
+  .pta-nav__link:hover,
+  .pta-nav__link:focus {
+    background: rgba(30, 41, 59, 0.15);
+  }
+
+  .pta-footer {
+    background: #f1f5f9;
+    color: #475569;
+    border-top-color: rgba(15, 23, 42, 0.08);
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .pta-page {
+    background: radial-gradient(circle at top, #1e293b, #0f172a 60%);
+    color: #e2e8f0;
+  }
+
+  .pta-card,
+  .pta-panel {
+    background: rgba(15, 23, 42, 0.92);
+    color: #e2e8f0;
+    box-shadow: 0 18px 38px rgba(8, 11, 24, 0.55);
+  }
+
+  .pta-card h2,
+  .pta-panel h2 {
+    color: #fff;
+  }
+
+  .pta-panel ul {
+    color: #cbd5f5;
+  }
+
+  .pta-main a:not(.pta-btn) {
+    color: #93c5fd;
+  }
+
+  .pta-main a:not(.pta-btn):hover,
+  .pta-main a:not(.pta-btn):focus {
+    color: #bfdbfe;
+  }
+}

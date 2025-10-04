@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pokemon Tactics Arena — Gestion d'équipe</title>
+    <link rel="stylesheet" href="../styles/main.css" />
+    <link rel="stylesheet" href="../styles/multipage.css" />
+  </head>
+  <body class="pta-page">
+    <header class="pta-header">
+      <div class="pta-header__inner">
+        <h1>Gestion d'équipe</h1>
+        <p>Composez votre roster personnalisé et préparez vos stratégies.</p>
+      </div>
+      <nav class="pta-nav" aria-label="Navigation principale">
+        <ul>
+          <li><a class="pta-nav__link" href="./index.html">Hub</a></li>
+          <li><a class="pta-nav__link" href="./survival.html">Survie</a></li>
+          <li><a class="pta-nav__link" href="./tournament.html">Tournoi</a></li>
+          <li><a class="pta-nav__link" href="./team-builder.html">Gestion d'équipe</a></li>
+          <li><a class="pta-nav__link" href="./free-play.html">Mode libre</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <main class="pta-main">
+      <section class="pta-panel">
+        <h2>Éditeur (bientôt disponible)</h2>
+        <p>
+          Cette page proposera un éditeur complet : sélection de Pokémon possédés, configuration des slots,
+          export/import de builds et visualisation de l'inventaire.
+        </p>
+      </section>
+
+      <section class="pta-card-grid">
+        <article class="pta-card">
+          <h2>Étapes prévues</h2>
+          <ol>
+            <li>Prototype UI (drag & drop / sélection rapide).</li>
+            <li>Sauvegarde locale (localStorage) et format d'échange JSON.</li>
+            <li>Connexion avec les modes Survie et Tournoi.</li>
+          </ol>
+        </article>
+        <article class="pta-card">
+          <h2>Etat de vos équipes</h2>
+          <p>Le stockage local n'est pas encore initialisé.</p>
+          <button class="pta-btn" type="button" id="team-builder-placeholder">Notifier quand disponible</button>
+        </article>
+      </section>
+    </main>
+
+    <footer class="pta-footer">
+      <small>Prototype en cours — suivez les mises à jour sur le hub.</small>
+    </footer>
+
+    <script type="module" src="../src/app/team-builder/bootstrap.js"></script>
+  </body>
+</html>

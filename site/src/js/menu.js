@@ -3,7 +3,6 @@
  * Gestionnaire de menu pour la page Pokédex
  * Ce fichier contient la classe MenuManager qui gère:
  * - La création d'un menu de filtrage par types de Pokémon
- * - La création d'une barre de recherche pour filtrer les Pokémons par nom ou id
  * - L'application des filtres sur la liste des Pokémons affichés
  */
 
@@ -136,15 +135,8 @@ class MenuManager {
     this.typeMenuContainer = document.createElement('div');
     this.typeMenuContainer.id = 'type-menu-container';
     this.menuContainer.appendChild(this.typeMenuContainer);
-    
-    // Créer le conteneur pour la barre de recherche
-    this.searchBarContainer = document.createElement('div');
-    this.searchBarContainer.id = 'search-bar-container';
-    this.menuContainer.appendChild(this.searchBarContainer);
-    
     // Créer les éléments du menu
     this.createTypeMenu();
-    this.createSearchBar();
   }
 
   // Méthode pour créer le menu de filtrage par type
@@ -227,60 +219,6 @@ class MenuManager {
     this.typeMenuContainer.appendChild(menuWrapper);
 
     this.highlightActiveType(allButton);
-  }
-
-  // Méthode pour créer la barre de recherche
-  createSearchBar() {
-    // Créer le conteneur de la barre de recherche
-    const searchContainer = document.createElement('div');
-    searchContainer.classList.add('search-container');
-    
-    // Créer l'input de recherche
-    const searchInput = document.createElement('input');
-    searchInput.type = 'text';
-    searchInput.id = 'search-pokemon';
-    searchInput.placeholder = 'Rechercher un Pokémon...';
-    searchInput.classList.add('search-input');
-    
-    // Ajouter l'événement de recherche sur la saisie
-    searchInput.addEventListener('input', () => {
-      this.filterPokemon(searchInput.value);
-      
-      // Déclencher l'événement pour l'historique si la recherche n'est pas vide
-      if (searchInput.value.trim()) {
-        const searchEvent = new CustomEvent('pokemonSearch', {
-          detail: {
-            query: searchInput.value.trim(),
-            type: 'recherche simple',
-            timestamp: new Date().toISOString()
-          }
-        });
-        document.dispatchEvent(searchEvent);
-      }
-    });
-    
-    // Assembler la barre de recherche
-    searchContainer.appendChild(searchInput);
-    this.searchBarContainer.appendChild(searchContainer);
-  }
-
-  // Méthode pour filtrer les Pokémons en fonction du terme de recherche
-  filterPokemon(searchTerm) {
-    const pokemonCards = document.querySelectorAll('.pokemon-card');
-    searchTerm = searchTerm.toLowerCase();
-
-    // Parcourir toutes les cartes et filtrer par nom ou ID
-    pokemonCards.forEach(card => {
-      const pokemonName = card.querySelector('h3')?.textContent.toLowerCase() || '';
-      const pokemonId = card.querySelector('p')?.textContent.toLowerCase() || '';
-
-      // Afficher ou masquer les cartes selon la recherche
-      if (pokemonName.includes(searchTerm) || pokemonId.includes(searchTerm)) {
-        card.style.display = '';
-      } else {
-        card.style.display = 'none';
-      }
-    });
   }
 
   highlightActiveType(activeItem) {

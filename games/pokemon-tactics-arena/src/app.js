@@ -6,6 +6,8 @@ import { renderTeam, renderBattleResult, renderLog, resetLog, renderProgress } f
 import { showBattleModal, initBattleModal } from './ui/battle-modal.js';
 import { renderEvolutionPanel } from './ui/evolution-panel.js';
 import { showToast } from './ui/notifications.js';
+import { buildRosterTeam, unlockRandomPokemon } from './app/survival/roster.js';
+import { initOnboarding } from './app/onboarding.js';
 
 const playerContainer = document.getElementById('player-team');
 const opponentContainer = document.getElementById('opponent-team');
@@ -118,8 +120,33 @@ function prepareTeam(team) {
 async function loadPlayerTeam() {
   toggleLoading(refreshPlayerBtn, true);
   try {
-    const team = await fetchBalancedTeam();
-    playerTeam = prepareTeam(team);
+    const teamSource = window.__ptaSurvivalTeamSource ?? (window.__ptaSurvivalPage ? 'roster' : 'balanced');
+    if (window.__ptaSurvivalPage) {
+      if (teamSource === 'roster') {
+        const preferred = Array.isArray(window.__ptaSelectedRoster) ? window.__ptaSelectedRoster : [];
+        const rosterTeam = await buildRosterTeam(progressState, 3, preferred);
+        if (!rosterTeam.length) {
+          showToast('Aucun Pokémon débloqué pour le mode Survie.', 'warning');
+          playerTeam = [];
+        } else {
+          playerTeam = prepareTeam(rosterTeam);
+        }
+      } else if (teamSource === 'evolution') {
+        const team = await fetchEvolutionReadyTeam(progressState.unlockedGenerations);
+        if (!team.length) {
+          showToast('Impossible de générer une équipe évolutive. Essayez une autre option.', 'warning');
+          playerTeam = [];
+        } else {
+          playerTeam = prepareTeam(team);
+        }
+      } else {
+        const team = await fetchBalancedTeam();
+        playerTeam = prepareTeam(team);
+      }
+    } else {
+      const team = await fetchBalancedTeam();
+      playerTeam = prepareTeam(team);
+    }
     pendingEvolutions = await gatherEvolutionCandidates(playerTeam, progressState);
     renderTeam(playerContainer, playerTeam);
     renderEvolutionPanel(evolutionListEl, pendingEvolutions, buildEvolutionHandlers());
@@ -135,17 +162,31 @@ async function loadPlayerTeam() {
 async function loadEvolutionTeam() {
   toggleLoading(recruitEvolutionBtn, true);
   try {
-    const team = await fetchEvolutionReadyTeam(progressState.unlockedGenerations);
-    if (!team.length) {
-      showToast('Impossible de trouver une equipe evolutive, nouvelle equipe equilibree.', 'warning');
-      await loadPlayerTeam();
-      return;
+    const teamSource = window.__ptaSurvivalTeamSource ?? (window.__ptaSurvivalPage ? 'roster' : 'balanced');
+    if (window.__ptaSurvivalPage && teamSource === 'roster') {
+      const preferred = Array.isArray(window.__ptaSelectedRoster) ? window.__ptaSelectedRoster : [];
+      const rosterTeam = await buildRosterTeam(progressState, 3, preferred);
+      if (!rosterTeam.length) {
+        showToast('Aucun Pokémon disponible dans votre roster.', 'warning');
+        return;
+      }
+      playerTeam = prepareTeam(rosterTeam);
+      showToast('Equipe roster rechargée.', 'info');
+    } else {
+      const team = await fetchEvolutionReadyTeam(progressState.unlockedGenerations);
+      if (!team.length) {
+        showToast('Impossible de trouver une equipe evolutive, nouvelle equipe equilibree.', 'warning');
+        if (!window.__ptaSurvivalPage || teamSource === 'roster') {
+          await loadPlayerTeam();
+        }
+        return;
+      }
+      playerTeam = prepareTeam(team);
+      showToast('Equipe evolutive recrutee.', 'info');
     }
-    playerTeam = prepareTeam(team);
     pendingEvolutions = await gatherEvolutionCandidates(playerTeam, progressState);
     renderTeam(playerContainer, playerTeam);
     renderEvolutionPanel(evolutionListEl, pendingEvolutions, buildEvolutionHandlers());
-    showToast('Equipe evolutive recrutee.', 'info');
   } catch (error) {
     console.error(error);
     showToast(`Erreur lors du recrutement : ${error.message}`, 'error');
@@ -264,15 +305,48 @@ async function startSurvivalMode() {
     showToast('Mode Survie non debloque.', 'warning');
     return;
   }
-  await ensurePlayerTeam();
+  const teamSource = window.__ptaSurvivalTeamSource ?? (window.__ptaSurvivalPage ? 'roster' : 'balanced');
+  const usingRoster = window.__ptaSurvivalPage === true && teamSource === 'roster';
+  if (usingRoster) {
+    const preferred = Array.isArray(window.__ptaSelectedRoster) ? window.__ptaSelectedRoster : [];
+    const rosterTeam = await buildRosterTeam(progressState, 3, preferred);
+    if (!rosterTeam.length) {
+      showToast('Aucun Pokémon débloqué pour lancer la Survie.', 'warning');
+      survivalStartBtn.disabled = false;
+      tournamentStartBtn.disabled = false;
+      startBattleBtn.disabled = false;
+      return;
+    }
+    playerTeam = prepareTeam(rosterTeam);
+    pendingEvolutions = await gatherEvolutionCandidates(playerTeam, progressState);
+    renderTeam(playerContainer, playerTeam);
+    renderEvolutionPanel(evolutionListEl, pendingEvolutions, buildEvolutionHandlers());
+  } else if (window.__ptaSurvivalPage === true && teamSource === 'balanced') {
+    await ensurePlayerTeam();
+  } else if (window.__ptaSurvivalPage === true && teamSource === 'evolution') {
+    const team = await fetchEvolutionReadyTeam(progressState.unlockedGenerations);
+    if (!team.length) {
+      showToast('Impossible de générer une équipe évolutive. Essayez une autre option.', 'warning');
+      survivalStartBtn.disabled = false;
+      tournamentStartBtn.disabled = false;
+      startBattleBtn.disabled = false;
+      return;
+    }
+    playerTeam = prepareTeam(team);
+    pendingEvolutions = await gatherEvolutionCandidates(playerTeam, progressState);
+    renderTeam(playerContainer, playerTeam);
+    renderEvolutionPanel(evolutionListEl, pendingEvolutions, buildEvolutionHandlers());
+  } else {
+    await ensurePlayerTeam();
+  }
   survivalStartBtn.disabled = true;
   tournamentStartBtn.disabled = true;
   startBattleBtn.disabled = true;
   resetBattleView();
-  showToast('Mode Survie : affrontez 3 vagues successives !', 'info');
+  showToast(usingRoster ? 'Mode Survie : vagues continues !' : 'Mode Survie : affrontez 3 vagues successives !', 'info');
 
   let wave = 1;
-  const totalWaves = 3;
+  const totalWaves = usingRoster ? Number.POSITIVE_INFINITY : 3;
   let survivorTeam = cloneTeam(playerTeam);
   let survived = true;
 
@@ -307,7 +381,26 @@ async function startSurvivalMode() {
     survivorTeam = healTeam(battle.player);
     pendingEvolutions = await gatherEvolutionCandidates(survivorTeam, progressState);
     renderEvolutionPanel(evolutionListEl, pendingEvolutions, buildEvolutionHandlers());
+    if (usingRoster) {
+      const progressItem = document.createElement('li');
+      progressItem.textContent = `Vague ${wave} vaincue`;
+      survivalProgressEl?.appendChild(progressItem);
+
+      if ([5, 10, 15, 20].includes(wave)) {
+        const rewards = unlockRandomPokemon(progressState, wave >= 20 ? 2 : 1);
+        if (rewards.length) {
+          const count = rewards.length;
+          showToast(`Survie : ${count} nouveau${count > 1 ? 'x' : ''} Pokémon débloqué${count > 1 ? 's' : ''}!`, 'success');
+          document.dispatchEvent(new CustomEvent('pta-roster-updated'));
+        }
+      }
+    }
     wave += 1;
+
+    if (usingRoster && wave > 50) {
+      showToast('Run Survie (démo) : 50 vagues franchies. Run terminé.', 'info');
+      break;
+    }
   }
 
   playerTeam = survivorTeam;
@@ -315,16 +408,24 @@ async function startSurvivalMode() {
   await loadOpponentTeam();
 
   if (survived) {
-    const bonus = grantBonusXP(progressState, 150, 'Bonus Survie !');
+    const bonusGain = usingRoster ? Math.min(400, 150 + (wave - 1) * 10) : 150;
+    const bonus = grantBonusXP(progressState, bonusGain, 'Bonus Survie !');
     progressState = bonus.state;
     renderProgress(progressPanel, progressState);
     syncModeButtons();
     bonus.events.forEach(evt => showToast(evt, 'success'));
-    showToast('Mode Survie : toutes les vagues vaincues !', 'success');
+    if (usingRoster) {
+      showToast(`Run Survie : ${wave - 1} vagues franchies !`, 'success');
+    } else {
+      showToast('Mode Survie : toutes les vagues vaincues !', 'success');
+    }
   }
 
   startBattleBtn.disabled = false;
   syncModeButtons();
+  if (usingRoster) {
+    survivalStartBtn.disabled = false;
+  }
 }
 
 async function startTournamentMode() {
@@ -414,6 +515,9 @@ function resetBattleView() {
   battleResultEl.classList.remove('is-player', 'is-opponent');
   renderTeam(playerContainer, playerTeam);
   renderTeam(opponentContainer, opponentTeam);
+  if (window.__ptaSurvivalPage && survivalProgressEl) {
+    survivalProgressEl.innerHTML = '';
+  }
 }
 
 function buildEvolutionHandlers() {
@@ -569,4 +673,9 @@ function addRecalculateButton() {
 document.addEventListener('DOMContentLoaded', () => {
   init();
   addRecalculateButton();
+  initOnboarding(() => progressState);
 });
+
+if (typeof window !== 'undefined') {
+  window.__ptaGetProgressState = () => ({ ...progressState });
+}

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pokemon Tactics Arena — Hub</title>
+    <link rel="stylesheet" href="../styles/main.css" />
+    <link rel="stylesheet" href="../styles/multipage.css" />
+  </head>
+  <body class="pta-page">
+    <header class="pta-header">
+      <div class="pta-header__inner">
+        <h1>Pokemon Tactics Arena</h1>
+        <p>Choisissez votre mode et gérez votre progression.</p>
+      </div>
+      <nav class="pta-nav" aria-label="Navigation principale">
+        <ul>
+          <li><a class="pta-nav__link" href="./index.html">Hub</a></li>
+          <li><a class="pta-nav__link" href="./survival.html">Survie</a></li>
+          <li><a class="pta-nav__link" href="./tournament.html">Tournoi</a></li>
+          <li><a class="pta-nav__link" href="./team-builder.html">Gestion d'équipe</a></li>
+          <li><a class="pta-nav__link" href="./arena.html">Arène</a></li>
+          <li><a class="pta-nav__link" href="./shop.html">Boutique</a></li>
+          <li><a class="pta-nav__link" href="./training.html">Entraînement</a></li>
+          <li><a class="pta-nav__link" href="./customization.html">Personnalisation</a></li>
+          <li><a class="pta-nav__link" href="./progression.html">Progression</a></li>
+          <li><a class="pta-nav__link" href="./achievements.html">Succès</a></li>
+          <li><a class="pta-nav__link" href="./free-play.html">Mode libre</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <main class="pta-main">
+      <section class="pta-card-grid">
+        <article class="pta-card">
+          <h2>Mode Survie</h2>
+          <p>Affrontez des vagues infinies de dresseurs pour accumuler des récompenses.</p>
+          <a class="pta-btn" href="./survival.html">Accéder à la page Survie</a>
+        </article>
+        <article class="pta-card">
+          <h2>Mode Tournoi</h2>
+          <p>Découvrez le bracket, vos titres passés et les récompenses à venir.</p>
+          <a class="pta-btn" href="./tournament.html">Explorer le mode Tournoi</a>
+        </article>
+        <article class="pta-card">
+          <h2>Gestion d'équipe</h2>
+          <p>Composez votre escouade personnalisée et gérez vos Pokémon débloqués.</p>
+          <a class="pta-btn" href="./team-builder.html">Gérer mes équipes</a>
+        </article>
+        <article class="pta-card">
+          <h2>Mode libre</h2>
+          <p>Entraînez-vous avec des équipes équilibrées ou évolutives et préparez vos stratégies.</p>
+          <a class="pta-btn" href="./free-play.html">Jouer en mode libre</a>
+        </article>
+        <article class="pta-card">
+          <h2>Mode Arène</h2>
+          <p>Relevez des défis classés, affrontez d'autres dresseurs et grimpez dans le classement.</p>
+          <a class="pta-btn" href="./arena.html">Découvrir l'Arène</a>
+        </article>
+        <article class="pta-card">
+          <h2>Boutique</h2>
+          <p>Achetez des Pokémon, objets et bonus d'XP grâce à vos PokeCredits.</p>
+          <a class="pta-btn" href="./shop.html">Accéder à la boutique</a>
+        </article>
+        <article class="pta-card">
+          <h2>Centres spécialisés</h2>
+          <p>Entraînement, personnalisation, progression et succès : gérez tout votre profil.</p>
+          <a class="pta-btn" href="./training.html">Aller aux centres</a>
+        </article>
+      </section>
+
+      <section class="pta-panel">
+        <h2>Prochaines fonctionnalités</h2>
+        <ul>
+          <li>Leaderboard Survie et récompenses dynamiques</li>
+          <li>Boutique & inventaire inter-run</li>
+          <li>Refonte du mode Tournoi</li>
+        </ul>
+      </section>
+    </main>
+
+    <footer class="pta-footer">
+      <small>Prototype en refonte — documentation : <a href="../docs/refonte-mode-survie.md">vision produit</a></small>
+    </footer>
+
+    <script type="module" src="../src/app/hub/bootstrap.js"></script>
+  </body>
+</html>

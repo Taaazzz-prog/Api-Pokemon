@@ -53,9 +53,9 @@
       <!-- Contenu principal de la page Pokédex -->
       <main>
         <!-- Titre de la page -->
-        <h1 class="text">Pokédex complet</h1>
+        <section id="main-header-slot" class="page-header"></section>
         
-        <!-- Conteneur pour le menu de filtrage et la barre de recherche (rempli par JavaScript) -->
+        <!-- Conteneur pour le menu de filtrage (rempli par JavaScript) -->
         <div id="menu-container" class="generation-menu"></div>
         
         <!-- Conteneur pour l'affichage de tous les Pokémon (rempli par JavaScript) -->
@@ -87,6 +87,7 @@
     
     <!-- Scripts JavaScript -->
     <script src="../src/js/script.js"></script>
+    <script src="../src/js/pokedex-header.js" type="module"></script>
     <script src="../src/js/modules/theme-manager.js"></script>
     <script src="../src/js/mobile-menu.js"></script>
     <script src="../src/js/pokemon-fallback-data.js"></script>
@@ -94,6 +95,7 @@
     <script src="../src/js/utils/pagination.js"></script>
     <script src="../src/js/modules/favorites.js"></script>
     <script src="../src/js/options-panel.js"></script>
+    <script src="../src/js/modules/advanced-search.js"></script>
     <script src="../src/js/modules/pokemon-comparator.js"></script>
     <script src="../src/js/modules/search-history.js"></script>
     <script src="../src/js/utils/image-optimizer.js"></script>

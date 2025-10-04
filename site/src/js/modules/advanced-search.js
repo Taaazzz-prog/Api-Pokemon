@@ -25,12 +25,11 @@ class AdvancedSearchManager {
     // Créer le conteneur de recherche avancée
     const advancedContainer = document.createElement('div');
     advancedContainer.classList.add('advanced-search-container');
-    advancedContainer.style.display = 'none';
 
     advancedContainer.innerHTML = `
       <div class="search-mode-toggle">
         <button id="toggle-search-mode" class="toggle-btn">
-          🔍 Recherche Avancée
+          🔍 Filtres avancés
         </button>
       </div>
       
@@ -120,11 +119,24 @@ class AdvancedSearchManager {
       </div>
     `;
 
-    // Insérer après le conteneur de recherche simple
-    const searchContainer = menuContainer.querySelector('#search-bar-container');
-    if (searchContainer) {
-      searchContainer.parentNode.insertBefore(advancedContainer, searchContainer.nextSibling);
+    advancedContainer.style.display = 'block';
+    const advancedFiltersEl = advancedContainer.querySelector('.advanced-filters');
+    if (advancedFiltersEl) {
+      advancedFiltersEl.style.display = 'none';
     }
+
+    const attachContainer = () => {
+      const typeContainer = menuContainer.querySelector('#type-menu-container');
+      if (typeContainer && typeContainer.parentNode) {
+        typeContainer.parentNode.insertBefore(advancedContainer, typeContainer.nextSibling);
+        return;
+      }
+      if (!advancedContainer.parentNode) {
+        menuContainer.appendChild(advancedContainer);
+      }
+      setTimeout(attachContainer, 120);
+    };
+    attachContainer();
 
     this.setupAdvancedSearchEvents();
     this.loadSavedSearches();
@@ -142,7 +154,7 @@ class AdvancedSearchManager {
       this.isAdvancedMode = !this.isAdvancedMode;
       advancedFilters.style.display = this.isAdvancedMode ? 'block' : 'none';
       toggleBtn.textContent = this.isAdvancedMode ? 
-        '🔍 Recherche Simple' : '🔍 Recherche Avancée';
+        '🔍 Masquer les filtres' : '🔍 Filtres avancés';
       
       if (!this.isAdvancedMode) {
         this.clearAllFilters();

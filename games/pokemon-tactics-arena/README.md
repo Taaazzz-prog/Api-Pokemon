@@ -25,21 +25,13 @@ Prototype de combat tactique au tour par tour reposant sur l API PokeBuild.
 - Boutons pour rafraichir les equipes, lancer un combat, reinitialiser le journal, reinitialiser la progression.
 
 ## Structure
-````
-pokemon-tactics-arena/
-├── index.html             # Layout principal
-├── styles/main.css        # Habillage visuel (progression, centre d evolution, toasts...)
-├── src/
-│   ├── api/pokebuild.js        # Appels a l API PokeBuild & pools evolutifs
-│   ├── battle/battle-engine.js # Simulation de combat
-│   ├── battle/evolution-manager.js # Evolution interactive
-│   ├── battle/type-effectiveness.js # Multiplicateurs de type
-│   ├── state/progression.js   # XP, niveaux, milestones, anti-farm
-│   ├── ui/evolution-panel.js  # Centre d evolution
-│   ├── ui/notifications.js    # Toasts
-│   ├── ui/renderers.js        # Rendu DOM (progression, equipes...)
-│   └── app.js                 # Logique principale + modes de jeu
-```
+- `index.html` : prototype historique (mode libre).
+- `app/` : hub, pages Survie, Tournoi, Gestion d'equipe et Mode libre (refonte multi-pages).
+- `styles/` : feuilles de style (`main.css` existant, `multipage.css` pour le hub).
+- `docs/` : vision produit de la refonte (`refonte-mode-survie.md`).
+- `src/` : logique existante + nouveaux modules ES dans `src/app/` (hub, survie, tournoi, etc.).
+
+> ⚠️ La refonte est en cours. Utilisez `app/index.html` comme point d'entree pour tester le hub et les futures pages.
 
 ## Prolongements possibles
 - Ajouter un systeme de merites / boutique pour acheter des bonus.
