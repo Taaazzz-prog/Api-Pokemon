@@ -12,9 +12,41 @@ export const useRoster = (filters?: any) => {
   return useQuery({
     queryKey: ['roster', filters],
     queryFn: async () => {
-      // TODO: Implémenter avec les vraies données utilisateur
+      // Récupérer l'utilisateur actuel
       const user = await realUserService.getCurrentUser();
-      return user.ownedPokemon || [];
+      
+      // Mapper les IDs Pokemon vers les objets Pokemon complets
+      if (!user.ownedPokemon || user.ownedPokemon.length === 0) {
+        return [];
+      }
+      
+      return user.ownedPokemon.map(pokemonId => {
+        const pokemonData = pokemonGameService.getPokemonById(pokemonId);
+        if (pokemonData) {
+          return {
+            id: pokemonData.id.toString(),
+            pokedexId: pokemonData.pokedexId,
+            name: pokemonData.name,
+            level: Math.floor(Math.random() * 50) + 1, // Niveau aléatoire pour l'instant
+            experience: 0,
+            types: pokemonData.types.map((type: any) => typeof type === 'string' ? type : type.frenchName),
+            stats: {
+              hp: pokemonData.hp,
+              attack: pokemonData.attack,
+              defense: pokemonData.defense,
+              spAttack: pokemonData.specialAttack,
+              spDefense: pokemonData.specialDefense,
+              speed: pokemonData.speed,
+            },
+            moves: [], // À implémenter
+            nature: 'Hardy',
+            isShiny: Math.random() < 0.1, // 10% de chance d'être shiny
+            nickname: undefined,
+            sprite: pokemonData.image,
+          };
+        }
+        return null;
+      }).filter(Boolean);
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
   });

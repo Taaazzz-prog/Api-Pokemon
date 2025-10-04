@@ -18,6 +18,11 @@ export class PokemonGameService {
     return [...common, ...uncommon, ...rare, ...legendary];
   }
 
+  // Récupère un Pokemon par ID
+  getPokemonById(pokemonId: number): Pokemon | null {
+    return realPokemonData.find(p => p.id === pokemonId) || null;
+  }
+
   // Récupère les stats d'un Pokemon
   async getPokemonStats(pokemonId: number): Promise<Pokemon | null> {
     return realPokemonData.find(p => p.id === pokemonId) || null;

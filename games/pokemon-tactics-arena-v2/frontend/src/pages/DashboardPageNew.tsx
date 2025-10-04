@@ -151,7 +151,7 @@ const DashboardPage: React.FC = () => {
                 <p className="font-medium text-sm">{pokemon.nickname || pokemon.name}</p>
                 <p className="text-xs text-gray-600">Niv. {pokemon.level}</p>
                 <div className="flex justify-center mt-1 space-x-1">
-                  {pokemon.types.map((type, index) => (
+                  {(pokemon.types || []).map((type: any, index: number) => (
                     <span 
                       key={index} 
                       className="px-1 py-0.5 text-xs bg-blue-100 text-blue-800 rounded"
