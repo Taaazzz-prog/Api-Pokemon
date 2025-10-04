@@ -84,6 +84,7 @@ function createBattlePokemon(pokemon, side) {
     stats: { ...pokemon.stats },
     types: pokemon.types ?? [],
     resistances: pokemon.resistances ?? [],
+    evolutions: Array.isArray(pokemon.evolutions) ? [...pokemon.evolutions] : [],
     currentHP: pokemon.stats?.HP ?? 0,
     maxHP: pokemon.stats?.HP ?? 0,
   };

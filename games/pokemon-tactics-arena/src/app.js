@@ -50,10 +50,10 @@ function renderModePanel() {
 function cloneTeam(team) {
   return team.map(pokemon => ({
     ...pokemon,
-    stats: { ...pokemon.stats },
-    types: [...pokemon.types],
-    resistances: [...pokemon.resistances],
-    evolutions: [...pokemon.evolutions]
+    stats: { ...(pokemon?.stats ?? {}) },
+    types: Array.isArray(pokemon?.types) ? pokemon.types.map(type => ({ ...type })) : [],
+    resistances: Array.isArray(pokemon?.resistances) ? pokemon.resistances.map(resistance => ({ ...resistance })) : [],
+    evolutions: Array.isArray(pokemon?.evolutions) ? [...pokemon.evolutions] : []
   }));
 }
 
