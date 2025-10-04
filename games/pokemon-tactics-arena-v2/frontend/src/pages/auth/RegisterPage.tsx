@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/RealAuthContext';
 import { RegisterRequest } from '../../services/api/auth';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';

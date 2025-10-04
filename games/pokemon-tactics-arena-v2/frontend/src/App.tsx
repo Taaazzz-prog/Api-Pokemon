@@ -2,13 +2,15 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/RealAuthContext';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
-import DashboardPage from './pages/DashboardPage';
-import RosterPage from './pages/RosterPage';
-import ShopPage from './pages/ShopPage';
-import ArenaPage from './pages/ArenaPage';
+import DashboardPageNew from './pages/DashboardPageNew';
+import RosterPageNew from './pages/RosterPageNew';
+import ShopPageReal from './pages/ShopPageReal';
+import TeamBuilderPage from './pages/TeamBuilderPage';
+import BattlePage from './pages/BattlePage';
+import ArenaPageNew from './pages/ArenaPageNew';
 import TournamentsPage from './pages/TournamentsPage';
 import SurvivalPage from './pages/SurvivalPage';
 import Layout from './components/Layout';
@@ -28,7 +30,7 @@ const queryClient = new QueryClient({
 
 // Protected Route component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isLoading } = useAuth();
   
   if (isLoading) {
     return (
@@ -38,7 +40,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
     );
   }
   
-  if (!isAuthenticated) {
+  if (!user) {
     return <Navigate to="/login" replace />;
   }
   
@@ -47,7 +49,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
 // Public Route component (redirect if already authenticated)
 const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isLoading } = useAuth();
   
   if (isLoading) {
     return (
@@ -57,7 +59,7 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     );
   }
   
-  if (isAuthenticated) {
+  if (user) {
     return <Navigate to="/dashboard" replace />;
   }
   
@@ -99,10 +101,12 @@ const App: React.FC = () => {
                 }
               >
                 <Route index element={<Navigate to="/dashboard" replace />} />
-                <Route path="dashboard" element={<DashboardPage />} />
-                <Route path="roster" element={<RosterPage />} />
-                <Route path="shop" element={<ShopPage />} />
-                <Route path="arena" element={<ArenaPage />} />
+                <Route path="dashboard" element={<DashboardPageNew />} />
+                <Route path="roster" element={<RosterPageNew />} />
+                <Route path="shop" element={<ShopPageReal />} />
+                <Route path="team-builder" element={<TeamBuilderPage />} />
+                <Route path="battle" element={<BattlePage />} />
+                <Route path="arena" element={<ArenaPageNew />} />
                 <Route path="tournaments" element={<TournamentsPage />} />
                 <Route path="survival" element={<SurvivalPage />} />
               </Route>

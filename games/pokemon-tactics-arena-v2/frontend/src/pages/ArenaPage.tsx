@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
+import { pokemonGameService } from '../services/pokemonGameService';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
-import {
-  TrophyIcon,
-  UserIcon,
-  ClockIcon,
-  ChartBarIcon,
-  PlayIcon,
-  QueueListIcon,
-} from '@heroicons/react/24/outline';
+
+interface ArenaPageProps {
+  className?: string;
+}
 
 interface Player {
   id: string;
@@ -32,50 +31,21 @@ const ArenaPage: React.FC = () => {
   const [inQueue, setInQueue] = useState(false);
   const [currentMatch, setCurrentMatch] = useState<Match | null>(null);
 
-  // Mock data
+  // TODO: Remplacer par de vraies données du service utilisateur
   const playerStats = {
-    currentRank: 'Silver II',
-    rating: 1432,
-    winRate: 68,
-    totalBattles: 87,
-    winStreak: 3,
-    level: 25,
+    currentRank: 'Bronze I',
+    rating: 1000,
+    winRate: 0,
+    totalBattles: 0,
+    winStreak: 0,
+    level: 1,
   };
 
-  const leaderboard: Player[] = [
-    { id: '1', username: 'DragonMaster', rank: 'Diamond I', rating: 2847, winRate: 89, level: 50 },
-    { id: '2', username: 'PikachuLord', rank: 'Diamond II', rating: 2756, winRate: 85, level: 48 },
-    { id: '3', username: 'FireStorm', rank: 'Diamond III', rating: 2698, winRate: 82, level: 47 },
-    { id: '4', username: 'AquaMaster', rank: 'Platinum I', rating: 2543, winRate: 78, level: 45 },
-    { id: '5', username: 'ThunderBolt', rank: 'Platinum II', rating: 2489, winRate: 76, level: 44 },
-  ];
+  // TODO: Remplacer par de vraies données du leaderboard
+  const leaderboard: Player[] = [];
 
-  const recentMatches = [
-    {
-      id: '1',
-      opponent: { username: 'AshTrainer', rank: 'Silver I', rating: 1489 },
-      result: 'win' as const,
-      ratingChange: +15,
-      duration: '8m 32s',
-      time: '2 hours ago',
-    },
-    {
-      id: '2',
-      opponent: { username: 'GymLeader', rank: 'Silver III', rating: 1398 },
-      result: 'win' as const,
-      ratingChange: +12,
-      duration: '12m 15s',
-      time: '1 day ago',
-    },
-    {
-      id: '3',
-      opponent: { username: 'EliteFour', rank: 'Gold III', rating: 1658 },
-      result: 'loss' as const,
-      ratingChange: -18,
-      duration: '15m 47s',
-      time: '2 days ago',
-    },
-  ];
+  // TODO: Remplacer par de vraies données des matches récents
+  const recentMatches: any[] = [];
 
   const handleStartQueue = () => {
     setInQueue(true);

@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/RealAuthContext';
 import {
   HomeIcon,
   UserGroupIcon,
@@ -48,6 +48,20 @@ const navigation: NavItem[] = [
     icon: ShoppingBagIcon,
     iconSolid: ShoppingBagIconSolid,
     description: 'Buy Pokemon packs and items',
+  },
+  {
+    name: 'Team Builder',
+    href: '/team-builder',
+    icon: UserGroupIcon,
+    iconSolid: UserGroupIconSolid,
+    description: 'Form tactical teams for battle',
+  },
+  {
+    name: 'Battle',
+    href: '/battle',
+    icon: TrophyIcon,
+    iconSolid: TrophyIconSolid,
+    description: 'Combat Pokemon simulation',
   },
   {
     name: 'Arena',

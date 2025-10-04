@@ -33,45 +33,8 @@ const RosterPage: React.FC = () => {
   const [filterType, setFilterType] = useState<string>('all');
   const [filterRarity, setFilterRarity] = useState<string>('all');
 
-  // Mock data
-  const pokemon: Pokemon[] = [
-    {
-      id: '1',
-      name: 'Thunder',
-      species: 'Pikachu',
-      level: 25,
-      types: ['Electric'],
-      rarity: 'uncommon',
-      stats: { hp: 120, attack: 85, defense: 60, speed: 110 },
-      moves: ['Thunderbolt', 'Quick Attack', 'Thunder Wave', 'Agility'],
-      isShiny: false,
-      favorite: true,
-    },
-    {
-      id: '2',
-      name: 'Blaze',
-      species: 'Charizard',
-      level: 42,
-      types: ['Fire', 'Flying'],
-      rarity: 'rare',
-      stats: { hp: 180, attack: 140, defense: 95, speed: 120 },
-      moves: ['Flamethrower', 'Dragon Claw', 'Air Slash', 'Roost'],
-      isShiny: true,
-      favorite: true,
-    },
-    {
-      id: '3',
-      name: 'Splash',
-      species: 'Gyarados',
-      level: 38,
-      types: ['Water', 'Flying'],
-      rarity: 'epic',
-      stats: { hp: 200, attack: 160, defense: 110, speed: 95 },
-      moves: ['Hydro Pump', 'Dragon Dance', 'Earthquake', 'Ice Fang'],
-      isShiny: false,
-      favorite: false,
-    },
-  ];
+  // TODO: Remplacer par de vraies données du service utilisateur
+  const pokemon: Pokemon[] = [];
 
   const teams = [
     {

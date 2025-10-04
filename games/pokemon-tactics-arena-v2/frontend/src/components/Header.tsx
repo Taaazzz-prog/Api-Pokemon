@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/RealAuthContext';
 import {
   BellIcon,
   Cog6ToothIcon,
@@ -41,7 +41,7 @@ const Header: React.FC = () => {
                 {user?.email?.split('@')[0] || 'Trainer'}
               </p>
               <p className="text-xs text-gray-500">
-                {user?.role || 'User'}
+                Niveau {user?.level || 1}
               </p>
             </div>
 

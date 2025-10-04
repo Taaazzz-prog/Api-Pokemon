@@ -21,7 +21,7 @@ services:
       - pokemon-mysql-data:/var/lib/mysql
       - ./backend/prisma/migrations:/docker-entrypoint-initdb.d
     ports:
-      - "3306:3306"
+      - "3307:3306"
     networks:
       - pokemon-network
     healthcheck:
@@ -30,6 +30,29 @@ services:
       retries: 10
     labels:
       - "traefik.enable=false"
+
+  # phpMyAdmin pour interface visuelle de la base de données
+  pokemon-phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: pokemon-phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: pokemon-mysql
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    ports:
+      - "8081:80"
+    networks:
+      - pokemon-network
+    depends_on:
+      - pokemon-mysql
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.phpmyadmin.rule=Host(`phpmyadmin.${DOMAIN_NAME}`)"
+      - "traefik.http.routers.phpmyadmin.tls=true"
+      - "traefik.http.routers.phpmyadmin.tls.certresolver=letsencrypt"
 
   # Redis pour cache et sessions
   pokemon-redis:

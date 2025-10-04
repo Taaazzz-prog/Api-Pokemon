@@ -20,37 +20,37 @@
 ## Phase 2 – Backend Gameplay
 - [x] Exposer simulateur de combat au tour par tour (API POST /battles, calculs dégâts, types, statuts, IA, seed).
 - [x] API Mode Libre (POST /modes/free/match, équipes prédéfinies, matchmaking IA, rewards XP/credits).
-- [ ] API Mode Survie (POST /modes/survival/start, /next, /abandon : gestion runs, vagues progressives, scoring, leaderboard).
-- [ ] API Mode Tournoi (POST /modes/tournament/start, /next : génération brackets, stages progression, récompenses finales).
-- [ ] API Mode Arène (POST /modes/arena/queue, /result : matchmaking PvP avec ELO, classement compétitif, historique).
-- [ ] API Boutique (GET /shop/catalog, POST /shop/purchase : filtrage par category/rarity, transactions validées, récompenses).
-- [ ] API Pack Starter (POST /roster/unlock : génération 3 cartes aléatoires, source='starter', drop rates configurables).
-- [ ] API Roster & Teams (GET /roster, POST /teams, DELETE /teams/{id}, POST /teams/{id}/lock).
-- [ ] Services Centres : Évolution (POST /evolution/trigger), Entraînement (POST /training/start), Personnalisation (POST /customization/apply).
+- [x] API Mode Survie (POST /modes/survival/start, /next, /abandon : gestion runs, vagues progressives, scoring, leaderboard).
+- [x] API Mode Tournoi (POST /modes/tournament/start, /next : génération brackets, stages progression, récompenses finales).
+- [x] API Mode Arène (POST /modes/arena/queue, /result : matchmaking PvP avec ELO, classement compétitif, historique).
+- [x] API Boutique (GET /shop/catalog, POST /shop/purchase : filtrage par category/rarity, transactions validées, récompenses).
+- [x] API Pack Starter (POST /roster/unlock : génération 3 cartes aléatoires, source='starter', drop rates configurables).
+- [x] API Roster & Teams (GET /roster, POST /teams, DELETE /teams/{id}, POST /teams/{id}/lock).
+- [x] Services Centres : Évolution (POST /evolution/trigger), Entraînement (POST /training/start), Personnalisation (POST /customization/apply).
 - [ ] Gestion progression (système XP joueur, niveaux, déverrouillage progressif modes par niveau, milestones, achievements).
 - [ ] API Achievements (GET /achievements, POST /achievements/claim : suivi progress, rewards).
 - [ ] API Leaderboards (GET /leaderboards/{mode} : classements globaux, filtres par période).
 
 ## Phase 3 – Frontend Fondation
-- [ ] Installer Vite + Phaser 3 (moteur 2D pour cartes, combats tour par tour, animations).
-- [ ] Configurer Zustand ou Redux (store global : user, roster, teams, currencies, UI states).
-- [ ] Intégrer charte graphique (tokens CSS `themes.css`, palette néon/tactique, dark/light modes selon `data-theme`).
-- [ ] Créer système de thèmes (variables CSS, stockage préférence dans `user_profiles.settings.theme`).
-- [ ] Importer package contracts (types partagés, validation côté client avec Zod).
-- [ ] Implémenter navigation multi-scènes Phaser (hub, modes, boutique, centres, profil, paramètres).
-- [ ] Créer scène onboarding interactive (animation ouverture pack starter avec 3 cartes flip, appel POST /roster/unlock).
-- [ ] Implémenter système de notifications/toasts (coin inférieur droit, variants success/warning/error selon charte).
+- [x] Installer Vite + Phaser 3 (moteur 2D pour cartes, combats tour par tour, animations).
+- [x] Configurer Zustand ou Redux (store global : user, roster, teams, currencies, UI states).
+- [x] Intégrer charte graphique (tokens CSS `themes.css`, palette néon/tactique, dark/light modes selon `data-theme`).
+- [x] Créer système de thèmes (variables CSS, stockage préférence dans `user_profiles.settings.theme`).
+- [x] Importer package contracts (types partagés, validation côté client avec Zod).
+- [x] Implémenter navigation multi-scènes Phaser (hub, modes, boutique, centres, profil, paramètres).
+- [x] Créer scène onboarding interactive (animation ouverture pack starter avec 3 cartes flip, appel POST /roster/unlock).
+- [x] Implémenter système de notifications/toasts (coin inférieur droit, variants success/warning/error selon charte).
 - [ ] Intégrer sprites Pokémon (CDN PokeBuild avec fallback local/placeholder, champ `image_url` depuis DB).
-- [ ] Créer composants UI réutilisables (boutons pill gradient, cartes Pokémon semi-opaque avec badges rarity, modales combat).
-- [ ] Migrer variables globales vers store central (remplacer `window.__pta*` par Zustand/Redux).
+- [x] Créer composants UI réutilisables (boutons pill gradient, cartes Pokémon semi-opaque avec badges rarity, modales combat).
+- [x] Migrer variables globales vers store central (remplacer `window.__pta*` par Zustand/Redux).
 
 ## Phase 4 – Pages & UX
-- [ ] Hub principal (dashboard progression GET /profile, accès rapides modes débloqués, événements GET /events).
+- [x] Hub principal (dashboard progression GET /profile, accès rapides modes débloqués, événements GET /events).
 - [ ] Mode Libre (sélecteur équipe, lancement POST /modes/free/match, écran résultats avec rewards).
 - [ ] Mode Survie (sélection roster 6 Pokémon, POST /modes/survival/start, combat vagues, intermissions upgrades, POST /next, scoreboard GET /leaderboards/survival).
 - [ ] Mode Tournoi (visualisation brackets interactifs, POST /modes/tournament/start, combat élimination directe, podium récompenses).
-- [ ] Mode Arène (team builder drag&drop, POST /modes/arena/queue, affichage ELO/rang, POST /result, historique GET /battles).
-- [ ] Boutique (catalogue GET /shop/catalog filtrable, affichage cartes avec price_currency/amount, panier, POST /shop/purchase, confirmation transactions).
+- [x] Mode Arène (team builder drag&drop, POST /modes/arena/queue, affichage ELO/rang, POST /result, historique GET /battles).
+- [x] Boutique (catalogue GET /shop/catalog filtrable, affichage cartes avec price_currency/amount, panier, POST /shop/purchase, confirmation transactions).
 - [ ] Centre Évolution (liste Pokémon évoluables depuis GET /roster, affichage conditions depuis `evolutions` JSON, POST /evolution/trigger avec animation).
 - [ ] Centre Entraînement (sélection Pokémon, POST /training/start, progression XP/stats visuelle avec barres animées).
 - [ ] Centre Personnalisation (customisation avatar, profil, skins, POST /customization/apply, prévisualisation temps réel).

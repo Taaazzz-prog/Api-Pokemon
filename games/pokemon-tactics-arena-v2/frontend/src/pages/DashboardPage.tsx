@@ -1,7 +1,9 @@
 import React from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/RealAuthContext';
+import { useRoster, useArenaStats } from '../hooks/useGameServices';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
+import LoadingSpinner from '../components/ui/LoadingSpinner';
 import {
   TrophyIcon,
   FireIcon,
@@ -14,18 +16,15 @@ import { Link } from 'react-router-dom';
 
 const DashboardPage: React.FC = () => {
   const { user } = useAuth();
+  const { data: roster, isLoading: rosterLoading } = useRoster();
+  const { data: arenaStats, isLoading: arenaLoading } = useArenaStats();
 
-  // Mock data for demonstration
-  const stats = {
-    level: 15,
-    experience: 2450,
-    nextLevelExp: 3000,
-    totalBattles: 42,
-    winRate: 68,
-    currentRank: 'Silver II',
-    pokemonCount: 12,
-    favoriteType: 'Electric',
-  };
+  if (!user) return <LoadingSpinner />;
+
+  const pokemonCount = roster?.length || 0;
+  const experiencePercentage = user ? (user.experience % 1000) / 10 : 0;
+  const nextLevelExp = 1000;
+  const winRate = user.stats.totalBattles > 0 ? Math.round((user.stats.battlesWon / user.stats.totalBattles) * 100) : 0;
 
   const recentBattles = [
     { id: 1, opponent: 'AshTrainer', result: 'win', type: 'Arena', time: '2 hours ago' },
@@ -60,18 +59,18 @@ const DashboardPage: React.FC = () => {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Level</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.level}</p>
+              <p className="text-2xl font-bold text-gray-900">{user.level}</p>
             </div>
           </div>
           <div className="mt-4">
             <div className="flex justify-between text-sm text-gray-600 mb-1">
               <span>Experience</span>
-              <span>{stats.experience}/{stats.nextLevelExp}</span>
+              <span>{user.experience}/{1000}</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div 
                 className="bg-yellow-500 h-2 rounded-full" 
-                style={{ width: `${(stats.experience / stats.nextLevelExp) * 100}%` }}
+                style={{ width: `${experiencePercentage}%` }}
               ></div>
             </div>
           </div>
@@ -84,11 +83,11 @@ const DashboardPage: React.FC = () => {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Win Rate</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.winRate}%</p>
+              <p className="text-2xl font-bold text-gray-900">{winRate}%</p>
             </div>
           </div>
           <p className="text-sm text-gray-500 mt-2">
-            {stats.totalBattles} total battles
+            {user.stats.totalBattles} total battles
           </p>
         </Card>
 
@@ -99,7 +98,7 @@ const DashboardPage: React.FC = () => {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Rank</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.currentRank}</p>
+              <p className="text-2xl font-bold text-gray-900">Bronze</p>
             </div>
           </div>
         </Card>
@@ -111,7 +110,7 @@ const DashboardPage: React.FC = () => {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Pokemon</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.pokemonCount}</p>
+              <p className="text-2xl font-bold text-gray-900">{user.ownedPokemon.length}</p>
             </div>
           </div>
         </Card>
