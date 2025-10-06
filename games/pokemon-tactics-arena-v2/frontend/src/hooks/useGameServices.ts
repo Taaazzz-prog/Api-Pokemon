@@ -15,20 +15,24 @@ export const useRoster = (filters?: any) => {
       // Récupérer l'utilisateur actuel
       const user = await realUserService.getCurrentUser();
       
-      // Mapper les IDs Pokemon vers les objets Pokemon complets
+      // Mapper les objets Pokemon possédés vers les objets Pokemon complets
       if (!user.ownedPokemon || user.ownedPokemon.length === 0) {
         return [];
       }
       
-      return user.ownedPokemon.map(pokemonId => {
-        const pokemonData = pokemonGameService.getPokemonById(pokemonId);
+      return user.ownedPokemon.map(ownedPokemon => {
+        const pokemonData = pokemonGameService.getPokemonById(ownedPokemon.id);
         if (pokemonData) {
           return {
-            id: pokemonData.id.toString(),
+            id: ownedPokemon.id.toString(),
             pokedexId: pokemonData.pokedexId,
             name: pokemonData.name,
-            level: Math.floor(Math.random() * 50) + 1, // Niveau aléatoire pour l'instant
-            experience: 0,
+            nickname: ownedPokemon.nickname,
+            level: ownedPokemon.level,
+            experience: ownedPokemon.experience,
+            isShiny: ownedPokemon.isShiny,
+            obtainedAt: ownedPokemon.obtainedAt,
+            obtainedFrom: ownedPokemon.obtainedFrom,
             types: pokemonData.types.map((type: any) => typeof type === 'string' ? type : type.frenchName),
             stats: {
               hp: pokemonData.hp,
@@ -40,8 +44,6 @@ export const useRoster = (filters?: any) => {
             },
             moves: [], // À implémenter
             nature: 'Hardy',
-            isShiny: Math.random() < 0.1, // 10% de chance d'être shiny
-            nickname: undefined,
             sprite: pokemonData.image,
           };
         }

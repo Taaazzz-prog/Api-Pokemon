@@ -1,0 +1,42 @@
+{
+  "id": null,
+  "uid": "pta-backend",
+  "title": "Pokemon Backend Overview",
+  "schemaVersion": 38,
+  "version": 1,
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "refresh": "30s",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "HTTP Requests (rate)",
+      "targets": [
+        {
+          "expr": "rate(http_requests_total[5m])",
+          "legendFormat": "{{method}} {{status}}"
+        }
+      ],
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 0 }
+    },
+    {
+      "type": "stat",
+      "title": "Connected Clients",
+      "targets": [
+        { "expr": "socketio_connected_clients" }
+      ],
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 9 }
+    },
+    {
+      "type": "stat",
+      "title": "Process Uptime (s)",
+      "targets": [
+        { "expr": "process_uptime_seconds" }
+      ],
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 9 }
+    }
+  ],
+  "templating": { "list": [] }
+}

@@ -320,4 +320,53 @@ export class CombatSimulator {
       }
     };
   }
+
+  /**
+   * Simule un combat complet entre deux équipes
+   */
+  async simulateBattle(
+    team1: CombatPokemon[],
+    team2: CombatPokemon[],
+    maxTurns: number = 50
+  ): Promise<BattleSummary> {
+    const logs: BattleLog[] = [];
+    let turn = 1;
+    let winner: 'player1' | 'player2' | 'draw' = 'draw';
+
+    // Combat principal
+    while (turn <= maxTurns) {
+      const team1Alive = team1.some(p => p.currentHp > 0);
+      const team2Alive = team2.some(p => p.currentHp > 0);
+
+      if (!team1Alive || !team2Alive) {
+        winner = !team1Alive ? 'player2' : 'player1';
+        break;
+      }
+
+      // Simuler un tour de combat
+      const activePokemon1 = team1.find(p => p.currentHp > 0);
+      const activePokemon2 = team2.find(p => p.currentHp > 0);
+
+      if (activePokemon1 && activePokemon2) {
+        // Créer une action d'attaque basique
+        const action: BattleAction = {
+          type: 'attack',
+          move: 'Tackle'
+        };
+        const turnResult = this.simulateTurn(activePokemon1, activePokemon2, action);
+        logs.push(...turnResult);
+      }
+
+      turn++;
+    }
+
+    const rewards: BattleRewards = {
+      credits: winner === 'player1' ? 100 : 50,
+      gems: winner === 'player1' ? 5 : 2,
+      xp: winner === 'player1' ? 150 : 75,
+      items: []
+    };
+
+    return this.generateBattleSummary(team1, team2, logs, winner, rewards);
+  }
 }

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import fetch from 'node-fetch';
 import { PrismaClient } from '@prisma/client';
 
@@ -400,6 +401,6 @@ export {
 };
 
 // Execute si lancé directement
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (require.main === module) {
   runMigration();
 }

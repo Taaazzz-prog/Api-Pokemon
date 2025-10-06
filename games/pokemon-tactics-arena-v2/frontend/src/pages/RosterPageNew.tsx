@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useRoster, useUpdatePokemonNickname } from '../hooks/useGameServices';
+import { getRarityBorderClasses, getRarityConfig } from '../utils/rarityUtils';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
@@ -159,19 +160,47 @@ const RosterPage: React.FC = () => {
           {/* Pokemon Grid */}
           {roster && roster.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {roster.map((pokemon) => (
-                <Card key={pokemon.id} className="p-4 hover:shadow-lg transition-shadow">
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="flex items-center space-x-2">
-                      {pokemon.isShiny && (
-                        <span className="text-yellow-500 text-lg" title="Shiny">✨</span>
-                      )}
-                      <span className="text-2xl">🎯</span>
+              {roster.map((pokemon) => {
+                if (!pokemon) return null;
+                
+                const rarityConfig = getRarityConfig(pokemon);
+                const borderClasses = getRarityBorderClasses(pokemon);
+                
+                return (
+                  <Card key={pokemon.id} className={`p-4 hover:shadow-lg transition-shadow ${borderClasses}`}>
+                    {/* Badge de rareté */}
+                    <div className="mb-3">
+                      <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${rarityConfig.bgColor} ${rarityConfig.textColor} border ${rarityConfig.borderColor}`}>
+                        {rarityConfig.label}
+                      </span>
                     </div>
-                    <div className="text-right">
-                      <span className="text-lg font-bold text-blue-600">Niv. {pokemon.level}</span>
+                    
+                    {/* Header avec image Pokemon */}
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex items-center space-x-3">
+                        {/* Image Pokemon */}
+                        <div className="relative">
+                          <img 
+                            src={pokemon.sprite || '/images/pokemon/unknown.png'} 
+                            alt={pokemon.name}
+                            className="w-12 h-12 object-contain rounded-lg bg-white p-1 border border-gray-200"
+                            onError={(e) => {
+                              // Fallback si l'image ne charge pas
+                              e.currentTarget.src = '/images/pokemon/unknown.png';
+                            }}
+                          />
+                          {/* Badge Shiny */}
+                          {pokemon.isShiny && (
+                            <div className="absolute -top-1 -right-1 text-yellow-400">
+                              <span className="text-sm">✨</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-lg font-bold text-blue-600">Niv. {pokemon.level}</span>
+                      </div>
                     </div>
-                  </div>
 
                   <div className="mb-3">
                     {editingPokemon === pokemon.id ? (
@@ -280,7 +309,8 @@ const RosterPage: React.FC = () => {
                     </Button>
                   </div>
                 </Card>
-              ))}
+              );
+            })}
             </div>
           ) : (
             <Card className="p-8 text-center">

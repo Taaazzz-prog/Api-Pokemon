@@ -1,11 +1,11 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, PokemonRarity } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Starting database seed...');
+  console.log('Seeding database with baseline data...');
 
-  // Création d'un utilisateur de test
+  // Base trainer account
   const testUser = await prisma.user.upsert({
     where: { email: 'test@pokemon.com' },
     update: {},
@@ -16,11 +16,13 @@ async function main() {
       profile: {
         create: {
           username: 'TestTrainer',
-          avatar: '👤',
+          avatar: null,
           level: 1,
           experience: 0,
           pokeCredits: 1000,
           pokeGems: 50,
+          settings: {},
+          stats: {}
         }
       }
     },
@@ -29,69 +31,82 @@ async function main() {
     }
   });
 
-  console.log('✅ Test user created:', testUser);
+  console.log('User ready:', testUser.email);
 
-  // Création de quelques Pokemon de base
+  // Minimal Pokemon catalogue aligned with Prisma schema
   const starterPokemon = [
     {
-      pokedexId: 1,
+      pokemonId: 1,
       name: 'Bulbasaur',
-      level: 5,
-      experience: 0,
-      types: ['Grass', 'Poison'],
+      types: ['grass', 'poison'],
       stats: { hp: 45, attack: 49, defense: 49, spAttack: 65, spDefense: 65, speed: 45 },
-      moves: ['Tackle', 'Growl'],
-      nature: 'Hardy',
-      isShiny: false,
-      userId: testUser.id
+      rarity: PokemonRarity.COMMON,
+      generation: 1
     },
     {
-      pokedexId: 4,
-      name: 'Charmander', 
-      level: 5,
-      experience: 0,
-      types: ['Fire'],
+      pokemonId: 4,
+      name: 'Charmander',
+      types: ['fire'],
       stats: { hp: 39, attack: 52, defense: 43, spAttack: 60, spDefense: 50, speed: 65 },
-      moves: ['Scratch', 'Growl'],
-      nature: 'Hardy',
-      isShiny: false,
-      userId: testUser.id
+      rarity: PokemonRarity.UNCOMMON,
+      generation: 1
     },
     {
-      pokedexId: 7,
+      pokemonId: 7,
       name: 'Squirtle',
-      level: 5, 
-      experience: 0,
-      types: ['Water'],
+      types: ['water'],
       stats: { hp: 44, attack: 48, defense: 65, spAttack: 50, spDefense: 64, speed: 43 },
-      moves: ['Tackle', 'Tail Whip'],
-      nature: 'Hardy',
-      isShiny: false,
-      userId: testUser.id
+      rarity: PokemonRarity.COMMON,
+      generation: 1
     }
   ];
 
-  for (const pokemon of starterPokemon) {
-    const createdPokemon = await prisma.userRoster.upsert({
-      where: { 
-        userId_pokedexId_nickname: {
-          userId: pokemon.userId,
-          pokedexId: pokemon.pokedexId,
-          nickname: pokemon.name
+  for (const entry of starterPokemon) {
+    const pokemon = await prisma.pokemon.upsert({
+      where: { pokemonId: entry.pokemonId },
+      update: {},
+      create: {
+        pokemonId: entry.pokemonId,
+        name: entry.name,
+        types: entry.types,
+        stats: entry.stats,
+        rarity: entry.rarity,
+        generation: entry.generation,
+        imageUrl: null,
+        evolutions: [],
+        moves: []
+      }
+    });
+
+    await prisma.userRoster.upsert({
+      where: {
+        userId_pokemonId: {
+          userId: testUser.id,
+          pokemonId: pokemon.id
         }
       },
       update: {},
-      create: pokemon
+      create: {
+        userId: testUser.id,
+        pokemonId: pokemon.id,
+        nickname: entry.name,
+        level: 5,
+        experience: 0,
+        customStats: null,
+        obtainedFrom: 'starter',
+        isLocked: false
+      }
     });
-    console.log('✅ Pokemon created:', createdPokemon.name);
+
+    console.log(`Pokemon ready: ${entry.name}`);
   }
 
-  console.log('🎉 Database seed completed!');
+  console.log('Seed completed successfully.');
 }
 
 main()
-  .catch((e) => {
-    console.error('❌ Seed failed:', e);
+  .catch((error) => {
+    console.error('Seed failed:', error);
     process.exit(1);
   })
   .finally(async () => {

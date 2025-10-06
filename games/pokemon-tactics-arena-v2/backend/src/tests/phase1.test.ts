@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { authService } from '../src/auth/auth.service';
-import { rarityService } from '../src/services/rarity.service';
+import { authService } from '../auth/auth.service';
+import { rarityService } from '../services/rarity.service';
 import { PokemonRarity } from '@prisma/client';
 
 describe('Phase 1 - Backend Fondations', () => {

@@ -185,7 +185,6 @@ secrets/
 
 # Monitoring and metrics
 metrics/
-monitoring/
 
 # Documentation build
 docs/_build/

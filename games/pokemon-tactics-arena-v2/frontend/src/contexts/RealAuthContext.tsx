@@ -93,8 +93,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const updateUser = async (updates: Partial<RealUser>) => {
     try {
       if (user) {
+        console.log('🔄 Mise à jour utilisateur dans le contexte:', updates);
         const updatedUser = await realUserService.updateUser(updates);
+        console.log('📱 Utilisateur mis à jour:', updatedUser);
         setUser(updatedUser);
+        console.log('✅ State du contexte mis à jour');
       }
     } catch (error) {
       console.error('Erreur lors de la mise à jour de l\'utilisateur:', error);
@@ -105,8 +108,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const refreshUser = async () => {
     try {
       if (token) {
+        console.log('🔄 Rafraîchissement des données utilisateur...');
         const userData = await realUserService.getCurrentUser();
+        console.log('📱 Nouvelles données utilisateur récupérées:', userData);
         setUser(userData);
+        console.log('✅ Utilisateur mis à jour dans le contexte');
       }
     } catch (error) {
       console.error('Erreur lors de la récupération des données utilisateur:', error);

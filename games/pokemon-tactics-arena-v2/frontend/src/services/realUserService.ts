@@ -1,5 +1,15 @@
 // Service utilisateur réel pour remplacer les données mockées
 
+export interface OwnedPokemon {
+  id: number;
+  nickname: string | null;
+  level: number;
+  experience: number;
+  isShiny: boolean;
+  obtainedAt: string;
+  obtainedFrom: string;
+}
+
 export interface RealUser {
   id: string;
   email: string;
@@ -10,9 +20,10 @@ export interface RealUser {
   pokeGems: number;
   coins: number;
   avatar: string;
-  ownedPokemon: number[];
+  ownedPokemon: OwnedPokemon[];
   teams: Team[];
   stats: UserStats;
+  hasReceivedStarterPack?: boolean;
 }
 
 export interface Team {
@@ -43,7 +54,8 @@ export const defaultUser: RealUser = {
   pokeGems: 50,
   coins: 1000,
   avatar: "/images/trainers/default.png",
-  ownedPokemon: [1, 4, 7], // Bulbizarre, Salamèche, Carapuce pour commencer
+  ownedPokemon: [], // Vide par défaut - sera rempli par le starter pack
+  hasReceivedStarterPack: false,
   teams: [
     {
       id: "starter-team",
@@ -69,6 +81,8 @@ export const realUserService = {
   getCurrentUser: async (): Promise<RealUser> => {
     // Dans une vraie app, cela ferait appel à l'API
     const userData = localStorage.getItem('pokemon-tactics-user');
+    console.log('📱 Récupération utilisateur depuis localStorage:', userData ? JSON.parse(userData) : 'Aucune donnée');
+    
     if (userData) {
       const parsed = JSON.parse(userData);
       return {
@@ -80,6 +94,7 @@ export const realUserService = {
       };
     }
     
+    console.log('🆕 Création d\'un nouvel utilisateur par défaut');
     // Sauvegarder l'utilisateur par défaut
     localStorage.setItem('pokemon-tactics-user', JSON.stringify(defaultUser));
     return defaultUser;
@@ -89,7 +104,19 @@ export const realUserService = {
   updateUser: async (updates: Partial<RealUser>): Promise<RealUser> => {
     const currentUser = await realUserService.getCurrentUser();
     const updatedUser = { ...currentUser, ...updates };
+    
+    console.log('💾 Mise à jour utilisateur:', {
+      before: currentUser,
+      updates: updates,
+      after: updatedUser
+    });
+    
     localStorage.setItem('pokemon-tactics-user', JSON.stringify(updatedUser));
+    
+    // Vérification que la sauvegarde a bien fonctionné
+    const saved = localStorage.getItem('pokemon-tactics-user');
+    console.log('✅ Données sauvegardées:', saved ? JSON.parse(saved) : 'Erreur de sauvegarde');
+    
     return updatedUser;
   },
 
@@ -128,8 +155,19 @@ export const realUserService = {
   // Ajouter un Pokémon à la collection
   addPokemonToCollection: async (pokemonId: number): Promise<RealUser> => {
     const user = await realUserService.getCurrentUser();
-    if (!user.ownedPokemon.includes(pokemonId)) {
-      user.ownedPokemon.push(pokemonId);
+    const alreadyOwned = user.ownedPokemon.some(owned => owned.id === pokemonId);
+    
+    if (!alreadyOwned) {
+      const newOwnedPokemon: OwnedPokemon = {
+        id: pokemonId,
+        nickname: null,
+        level: 1,
+        experience: 0,
+        isShiny: Math.random() < 0.05, // 5% de chance d'être shiny
+        obtainedAt: new Date().toISOString(),
+        obtainedFrom: 'shop'
+      };
+      user.ownedPokemon.push(newOwnedPokemon);
     }
     return realUserService.updateUser(user);
   },

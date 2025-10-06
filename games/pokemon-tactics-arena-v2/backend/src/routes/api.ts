@@ -4,14 +4,14 @@ import { rosterService } from '../services/roster.service';
 import { evolutionService } from '../services/evolution.service';
 import { arenaService } from '../services/arena.service';
 import { tournamentService } from '../services/tournament.service';
-import { authenticateToken } from '../middleware/auth';
+import { authenticate, AuthRequest } from '../middleware/auth';
 import { validateRequest } from '../middleware/validation';
 import { z } from 'zod';
 
 const router = Router();
 
 // Shop Routes
-router.get('/shop/catalog', authenticateToken, async (req, res) => {
+router.get('/shop/catalog', authenticate, async (req, res) => {
   try {
     const filters = {
       category: req.query.category as string,
@@ -33,7 +33,7 @@ router.get('/shop/catalog', authenticateToken, async (req, res) => {
   }
 });
 
-router.post('/shop/purchase', authenticateToken, async (req, res) => {
+router.post('/shop/purchase', authenticate, async (req, res) => {
   try {
     const { itemId, quantity = 1 } = req.body;
     const userId = req.user!.id;
@@ -52,7 +52,7 @@ router.post('/shop/purchase', authenticateToken, async (req, res) => {
 });
 
 // Roster Routes
-router.get('/roster', authenticateToken, async (req, res) => {
+router.get('/roster', authenticate, async (req, res) => {
   try {
     const userId = req.user!.id;
     const filters = {
@@ -75,7 +75,7 @@ router.get('/roster', authenticateToken, async (req, res) => {
   }
 });
 
-router.put('/roster/:pokemonId/nickname', authenticateToken, async (req, res) => {
+router.put('/roster/:pokemonId/nickname', authenticate, async (req, res) => {
   try {
     const userId = req.user!.id;
     const { pokemonId } = req.params;
@@ -94,7 +94,7 @@ router.put('/roster/:pokemonId/nickname', authenticateToken, async (req, res) =>
   }
 });
 
-router.get('/roster/teams', authenticateToken, async (req, res) => {
+router.get('/roster/teams', authenticate, async (req, res) => {
   try {
     const userId = req.user!.id;
     const teams = await rosterService.getTeams(userId);
@@ -111,7 +111,7 @@ router.get('/roster/teams', authenticateToken, async (req, res) => {
   }
 });
 
-router.post('/roster/teams', authenticateToken, async (req, res) => {
+router.post('/roster/teams', authenticate, async (req, res) => {
   try {
     const userId = req.user!.id;
     const { name, pokemonIds = [] } = req.body;
@@ -145,7 +145,7 @@ router.get('/evolution/chains', async (req, res) => {
   }
 });
 
-router.get('/evolution/:pokemonId/check', authenticateToken, async (req, res) => {
+router.get('/evolution/:pokemonId/check', authenticate, async (req, res) => {
   try {
     const userId = req.user!.id;
     const { pokemonId } = req.params;
@@ -163,7 +163,7 @@ router.get('/evolution/:pokemonId/check', authenticateToken, async (req, res) =>
   }
 });
 
-router.post('/evolution/:pokemonId/evolve', authenticateToken, async (req, res) => {
+router.post('/evolution/:pokemonId/evolve', authenticate, async (req, res) => {
   try {
     const userId = req.user!.id;
     const { pokemonId } = req.params;
@@ -183,7 +183,7 @@ router.post('/evolution/:pokemonId/evolve', authenticateToken, async (req, res) 
 });
 
 // Arena Routes
-router.post('/arena/queue', authenticateToken, async (req, res) => {
+router.post('/arena/queue', authenticate, async (req, res) => {
   try {
     const userId = req.user!.id;
     const { mode = 'RANKED', ratingRange = 200 } = req.body;
@@ -201,7 +201,7 @@ router.post('/arena/queue', authenticateToken, async (req, res) => {
   }
 });
 
-router.delete('/arena/queue', authenticateToken, async (req, res) => {
+router.delete('/arena/queue', authenticate, async (req, res) => {
   try {
     const userId = req.user!.id;
     await arenaService.leaveQueue(userId);
@@ -218,7 +218,7 @@ router.delete('/arena/queue', authenticateToken, async (req, res) => {
   }
 });
 
-router.get('/arena/current-match', authenticateToken, async (req, res) => {
+router.get('/arena/current-match', authenticate, async (req, res) => {
   try {
     const userId = req.user!.id;
     const match = await arenaService.getCurrentMatch(userId);
@@ -255,7 +255,7 @@ router.get('/arena/rankings', async (req, res) => {
   }
 });
 
-router.get('/arena/stats', authenticateToken, async (req, res) => {
+router.get('/arena/stats', authenticate, async (req, res) => {
   try {
     const userId = req.user!.id;
     const stats = await arenaService.getUserStats(userId);
@@ -296,7 +296,7 @@ router.get('/tournaments', async (req, res) => {
   }
 });
 
-router.post('/tournaments', authenticateToken, async (req, res) => {
+router.post('/tournaments', authenticate, async (req, res) => {
   try {
     const creatorId = req.user!.id;
     const tournamentData = req.body;
@@ -314,7 +314,7 @@ router.post('/tournaments', authenticateToken, async (req, res) => {
   }
 });
 
-router.post('/tournaments/:tournamentId/join', authenticateToken, async (req, res) => {
+router.post('/tournaments/:tournamentId/join', authenticate, async (req, res) => {
   try {
     const userId = req.user!.id;
     const { tournamentId } = req.params;

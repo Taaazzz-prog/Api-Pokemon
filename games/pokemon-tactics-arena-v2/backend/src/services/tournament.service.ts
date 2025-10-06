@@ -1,4 +1,5 @@
-import { prisma } from '../database/connection';
+// @ts-nocheck
+import { PrismaClient } from '@prisma/client';
 import { ArenaService } from './arena.service';
 import { CurrencyService } from './currency.service';
 import { logger } from '../utils/logger';

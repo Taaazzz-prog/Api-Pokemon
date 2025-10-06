@@ -2,7 +2,13 @@ import { Request, Response, NextFunction } from 'express';
 import { authService, TokenPayload } from './auth.service';
 
 export interface AuthenticatedRequest extends Request {
-  user?: TokenPayload;
+  user?: {
+    id: string;
+    email: string;
+    role: string;
+    userId?: string;
+    tokenId?: string;
+  };
 }
 
 /**
@@ -23,7 +29,13 @@ export const authenticateToken = (
 
   try {
     const decoded = authService.verifyAccessToken(token);
-    req.user = decoded;
+    req.user = {
+      id: decoded.userId,
+      email: decoded.email,
+      role: decoded.role,
+      userId: decoded.userId,
+      tokenId: decoded.tokenId
+    };
     next();
   } catch (error) {
     res.status(403).json({ error: 'Invalid or expired token' });
@@ -86,7 +98,13 @@ export const optionalAuth = (
   if (token) {
     try {
       const decoded = authService.verifyAccessToken(token);
-      req.user = decoded;
+      req.user = {
+        id: decoded.userId,
+        email: decoded.email,
+        role: decoded.role,
+        userId: decoded.userId,
+        tokenId: decoded.tokenId
+      };
     } catch (error) {
       // Ignore invalid tokens in optional auth
     }

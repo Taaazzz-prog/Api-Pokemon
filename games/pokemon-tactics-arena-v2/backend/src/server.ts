@@ -8,8 +8,9 @@ import dotenv from 'dotenv';
 
 import { logger } from './utils/logger';
 import { metricsMiddleware, getMetrics } from './utils/metrics';
+import apiRouter from './routes/api';
+import { testConnection } from './database/connection';
 
-// Load environment variables
 dotenv.config();
 
 const app = express();
@@ -23,29 +24,25 @@ const io = new SocketIOServer(server, {
 
 const PORT = process.env.PORT || 3001;
 
-// Security middleware
+// Core middleware
 app.use(helmet());
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',
   credentials: true,
 }));
 
-// Rate limiting
 const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10), // 15 minutes
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10),
   max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100', 10),
   message: 'Too many requests from this IP',
 });
 app.use(limiter);
 
-// Body parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
-
-// Metrics middleware
 app.use(metricsMiddleware);
 
-// Health check
+// Health endpoints
 app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
@@ -55,19 +52,19 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Metrics endpoint
 app.get('/metrics', getMetrics);
 
-// API routes will be added here
-app.use('/api/v1', (req, res) => {
+// API router
+app.get('/api', (req, res) => {
   res.json({
     message: 'Pokemon Tactics Arena v2 API',
     version: '1.0.0',
-    documentation: '/api/v1/docs',
+    documentation: '/api/docs',
   });
 });
+app.use('/api', apiRouter);
 
-// Error handling middleware
+// Error handling
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   logger.error('Unhandled error', {
     error: err.message,
@@ -83,7 +80,6 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   });
 });
 
-// 404 handler
 app.use('*', (req, res) => {
   res.status(404).json({
     success: false,
@@ -91,7 +87,7 @@ app.use('*', (req, res) => {
   });
 });
 
-// Socket.IO connection handling
+// Socket.IO events
 io.on('connection', (socket) => {
   logger.info('Client connected', { socketId: socket.id });
 
@@ -99,13 +95,26 @@ io.on('connection', (socket) => {
     logger.info('Client disconnected', { socketId: socket.id, reason });
   });
 
-  // Game event handlers will be added here
   socket.on('join_battle', (data) => {
     logger.info('Player joined battle', { socketId: socket.id, data });
   });
 });
 
-// Graceful shutdown
+const startServer = async () => {
+  const dbReady = await testConnection();
+  if (!dbReady) {
+    logger.warn('Database connection failed at startup. API will still start but requests may fail.');
+  }
+
+  server.listen(PORT, () => {
+    logger.info('Pokemon Tactics Arena v2 backend started', {
+      port: PORT,
+      environment: process.env.NODE_ENV || 'development',
+      timestamp: new Date().toISOString(),
+    });
+  });
+};
+
 process.on('SIGTERM', () => {
   logger.info('SIGTERM received, shutting down gracefully');
   server.close(() => {
@@ -122,13 +131,6 @@ process.on('SIGINT', () => {
   });
 });
 
-// Start server
-server.listen(PORT, () => {
-  logger.info(`🚀 Pokemon Tactics Arena v2 Backend started`, {
-    port: PORT,
-    environment: process.env.NODE_ENV || 'development',
-    timestamp: new Date().toISOString(),
-  });
-});
+startServer();
 
 export { app, server, io };

@@ -124,10 +124,10 @@ const Sidebar: React.FC = () => {
               </p>
               <div className="flex items-center space-x-2 text-xs">
                 <span className="text-yellow-300">
-                  {'1,000'} ₽
+                  {user?.pokeCredits?.toLocaleString() || '0'} ₽
                 </span>
                 <span className="text-purple-300">
-                  {'50'} 💎
+                  {user?.pokeGems || '0'} 💎
                 </span>
               </div>
             </div>
