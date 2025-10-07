@@ -9,6 +9,7 @@ import dotenv from 'dotenv';
 import { logger } from './utils/logger';
 import { metricsMiddleware, getMetrics } from './utils/metrics';
 import apiRouter from './routes/api';
+import pokemonV2Router from './routes/pokemon-v2';
 import { testConnection } from './database/connection';
 
 dotenv.config();
@@ -63,6 +64,7 @@ app.get('/api', (req, res) => {
   });
 });
 app.use('/api', apiRouter);
+app.use('/api/v2', pokemonV2Router);
 
 // Error handling
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

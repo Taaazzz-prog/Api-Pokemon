@@ -12,43 +12,44 @@ export const useRoster = (filters?: any) => {
   return useQuery({
     queryKey: ['roster', filters],
     queryFn: async () => {
-      // Récupérer l'utilisateur actuel
-      const user = await realUserService.getCurrentUser();
-      
-      // Mapper les objets Pokemon possédés vers les objets Pokemon complets
-      if (!user.ownedPokemon || user.ownedPokemon.length === 0) {
+      try {
+        // Utiliser directement l'API roster qui retourne la structure corrigée
+        const rosterResponse = await realUserService.getUserRoster();
+        console.log('✅ Données roster récupérées:', rosterResponse);
+        
+        // L'API retourne {pokemon: [...], total: 3}
+        if (!rosterResponse || !rosterResponse.pokemon || rosterResponse.pokemon.length === 0) {
+          return [];
+        }
+        
+        return rosterResponse.pokemon.map((pokemon: any) => ({
+          id: pokemon.id,
+          pokedexId: pokemon.pokemonId,
+          name: pokemon.pokemonName,
+          nickname: pokemon.nickname,
+          level: pokemon.level,
+          experience: pokemon.experience || 0,
+          isShiny: false, // TODO: À implémenter
+          obtainedAt: pokemon.obtainedAt || new Date().toISOString(),
+          obtainedFrom: pokemon.obtainedFrom,
+          types: [], // TODO: À récupérer depuis l'API Pokemon
+          stats: {
+            hp: 0,
+            attack: 0,
+            defense: 0,
+            spAttack: 0,
+            spDefense: 0,
+            speed: 0,
+          },
+          moves: [],
+          nature: 'Hardy',
+          sprite: pokemon.spriteRegular, // Utiliser le sprite de la base de données
+          spriteShiny: pokemon.spriteShiny, // Sprite shiny disponible aussi
+        }));
+      } catch (error) {
+        console.error('❌ Erreur lors de la récupération du roster:', error);
         return [];
       }
-      
-      return user.ownedPokemon.map(ownedPokemon => {
-        const pokemonData = pokemonGameService.getPokemonById(ownedPokemon.id);
-        if (pokemonData) {
-          return {
-            id: ownedPokemon.id.toString(),
-            pokedexId: pokemonData.pokedexId,
-            name: pokemonData.name,
-            nickname: ownedPokemon.nickname,
-            level: ownedPokemon.level,
-            experience: ownedPokemon.experience,
-            isShiny: ownedPokemon.isShiny,
-            obtainedAt: ownedPokemon.obtainedAt,
-            obtainedFrom: ownedPokemon.obtainedFrom,
-            types: pokemonData.types.map((type: any) => typeof type === 'string' ? type : type.frenchName),
-            stats: {
-              hp: pokemonData.hp,
-              attack: pokemonData.attack,
-              defense: pokemonData.defense,
-              spAttack: pokemonData.specialAttack,
-              spDefense: pokemonData.specialDefense,
-              speed: pokemonData.speed,
-            },
-            moves: [], // À implémenter
-            nature: 'Hardy',
-            sprite: pokemonData.image,
-          };
-        }
-        return null;
-      }).filter(Boolean);
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
@@ -98,7 +99,7 @@ export const usePurchaseItem = () => {
   
   return useMutation({
     mutationFn: async (itemId: string) => {
-      const currentUser = await realUserService.getCurrentUser();
+      const currentUser = await realUserService.getUser();
       if (!currentUser) throw new Error('Utilisateur non connecté');
       return realShopService.purchaseItem(itemId, currentUser.id);
     },

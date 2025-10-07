@@ -19,7 +19,7 @@ export const useStarterPack = () => {
       console.log('🔍 Vérification du starter pack pour l\'utilisateur:', user.id);
 
       try {
-        const hasReceived = await starterPackService.hasReceivedStarterPack();
+        const hasReceived = starterPackService.hasReceivedStarterPack(user);
         
         console.log('📊 Résultat vérification starter pack:', { hasReceived });
         

@@ -132,8 +132,10 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         const response = await apiClient.login({ email, password });
         
         if (response.user) {
-          dispatch({ type: 'LOGIN_SUCCESS', payload: response.user });
-          console.log('✅ Utilisateur connecté:', response.user.username);
+          // Connexion réussie, récupérons le profil complet
+          console.log('✅ Connexion réussie, récupération du profil complet...');
+          await refreshUser(); // Récupère le profil complet depuis /auth/me
+          console.log('✅ Utilisateur connecté avec profil complet');
         } else {
           throw new Error('Données utilisateur manquantes dans la réponse');
         }
@@ -179,8 +181,10 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       const response = await apiClient.register({ email, password, username });
       
       if (response.user) {
-        dispatch({ type: 'LOGIN_SUCCESS', payload: response.user });
-        console.log('✅ Utilisateur inscrit:', response.user.username);
+        // L'inscription a réussi, maintenant récupérons le profil complet
+        console.log('✅ Inscription réussie, récupération du profil complet...');
+        await refreshUser(); // Récupère le profil complet depuis /auth/me
+        console.log('✅ Utilisateur inscrit avec profil complet');
       } else {
         throw new Error('Données utilisateur manquantes dans la réponse');
       }

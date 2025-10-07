@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { PrismaClient } from '@prisma/client';
+import { prisma } from '../database/connection';
 import { CurrencyService } from './currency.service';
 import { logger } from '../utils/logger';
 
@@ -329,16 +330,18 @@ export class ShopService {
         rarity = this.rollPackRarity(item.rarity);
       }
 
-      // Get random Pokemon of this rarity
+      // Get random Pokemon of this rarity (for now, get any Pokemon by generation)
       const randomPokemon = await prisma.pokemon.findFirst({
-        where: { rarity: rarity as any },
+        where: { 
+          generation: { lte: 3 } // Only Gen 1-3 for now
+        },
         skip: Math.floor(Math.random() * 100),
-        orderBy: { createdAt: 'asc' }
+        orderBy: { id: 'asc' }
       });
 
       if (randomPokemon) {
         // Add to user's roster
-        const rosterEntry = await prisma.rosterEntry.create({
+        const rosterEntry = await prisma.userRoster.create({
           data: {
             userId,
             pokemonId: randomPokemon.id,

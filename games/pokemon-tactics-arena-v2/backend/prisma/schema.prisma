@@ -47,6 +47,7 @@ model UserProfile {
   winRate         Float     @default(0.0) @map("win_rate")
   pokeCredits     Int       @default(0) @map("poke_credits")
   pokeGems        Int       @default(0) @map("poke_gems")
+  hasReceivedStarterPack Boolean @default(false) @map("has_received_starter_pack")
   settings        Json      @default("{}")
   stats           Json      @default("{}")
   createdAt       DateTime  @default(now()) @map("created_at")
@@ -59,31 +60,67 @@ model UserProfile {
 }
 
 model Pokemon {
-  id              String    @id @default(uuid())
-  pokemonId       Int       @map("pokemon_id") // PokeAPI ID
-  name            String
-  types           Json      // ["fire", "flying"]
-  stats           Json      // {hp: 78, attack: 84, ...}
-  rarity          PokemonRarity
+  id              Int       @id // PokeAPI ID
+  nameFr          String    @map("name_fr")
+  nameEn          String    @map("name_en")
+  nameJp          String    @map("name_jp")
   generation      Int
-  imageUrl        String?   @map("image_url")
-  evolutions      Json      @default("[]") // Evolution chain
-  moves           Json      @default("[]") // Available moves
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
+  category        String?
+  height          String?
+  weight          String?
+  hp              Int       @default(0)
+  attackStat      Int       @map("attack_stat") @default(0)
+  defenseStat     Int       @map("defense_stat") @default(0)
+  specialAttack   Int       @map("special_attack") @default(0)
+  specialDefense  Int       @map("special_defense") @default(0)
+  speed           Int       @default(0)
+  catchRate       Int       @map("catch_rate") @default(0)
+  level100Exp     Int       @map("level_100_exp") @default(0)
+  spriteRegular   String?   @map("sprite_regular")
+  spriteShiny     String?   @map("sprite_shiny")
+  spriteGmax      String?   @map("sprite_gmax")
+  maleRate        Decimal   @map("male_rate") @default(0) @db.Decimal(5,2)
+  femaleRate      Decimal   @map("female_rate") @default(0) @db.Decimal(5,2)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamp(0)
 
   // Relations
   userRoster      UserRoster[]
   teamMembers     TeamMember[]
+  typeRelations   PokemonTypeRelation[]
 
-  @@unique([pokemonId])
-  @@map("pokemons")
+  @@map("pokemon")
+}
+
+model PokemonType {
+  id        Int     @id @default(autoincrement())
+  name      String  @unique
+  imageUrl  String? @map("image_url")
+  color     String?
+
+  // Relations
+  pokemonRelations PokemonTypeRelation[]
+
+  @@map("pokemon_types")
+}
+
+model PokemonTypeRelation {
+  pokemonId   Int @map("pokemon_id")
+  typeId      Int @map("type_id") 
+  slotNumber  Int @default(1) @map("slot_number")
+
+  // Relations
+  pokemon     Pokemon     @relation(fields: [pokemonId], references: [id])
+  type        PokemonType @relation(fields: [typeId], references: [id])
+
+  @@id([pokemonId, typeId])
+  @@map("pokemon_type_relations")
 }
 
 model UserRoster {
   id              String    @id @default(uuid())
   userId          String    @map("user_id")
-  pokemonId       String    @map("pokemon_id")
+  pokemonId       Int       @map("pokemon_id")
   nickname        String?
   level           Int       @default(1)
   experience      Int       @default(0)
@@ -124,7 +161,7 @@ model TeamMember {
   id              String    @id @default(uuid())
   teamPresetId    String    @map("team_preset_id")
   userRosterId    String    @map("user_roster_id")
-  pokemonId       String    @map("pokemon_id")
+  pokemonId       Int       @map("pokemon_id")
   position        Int       // 1-6 for team position
   createdAt       DateTime  @default(now()) @map("created_at")
 

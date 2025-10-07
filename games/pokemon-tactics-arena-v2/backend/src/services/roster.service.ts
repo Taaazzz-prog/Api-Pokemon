@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { PrismaClient } from '@prisma/client';
+import { prisma } from '../database/connection';
 import { logger } from '../utils/logger';
 
 export interface RosterPokemon {
@@ -136,13 +137,11 @@ export class RosterService {
     }
 
     // Get roster entries
-    const rosterEntries = await prisma.rosterEntry.findMany({
+    const rosterEntries = await prisma.userRoster.findMany({
       where,
       include: {
         pokemon: true,
-        teamSlots: {
-          include: { team: true }
-        }
+        teamMembers: true
       },
       orderBy,
       skip: offset,
@@ -150,18 +149,25 @@ export class RosterService {
     });
 
     // Get total count
-    const total = await prisma.rosterEntry.count({ where });
+    const total = await prisma.userRoster.count({ where });
 
     // Transform to RosterPokemon format
     const pokemon: RosterPokemon[] = rosterEntries.map(entry => ({
       id: entry.id,
       pokemon: {
         id: entry.pokemon.id,
-        name: entry.pokemon.name,
-        type1: entry.pokemon.type1,
-        type2: entry.pokemon.type2,
-        baseStats: entry.pokemon.baseStats,
-        rarity: entry.pokemon.rarity,
+        name: entry.pokemon.nameFr, // Use French name as default
+        type1: 'normal', // TODO: Get from typeRelations
+        type2: null,
+        baseStats: {
+          hp: entry.pokemon.hp,
+          attack: entry.pokemon.attackStat,
+          defense: entry.pokemon.defenseStat,
+          specialAttack: entry.pokemon.specialAttack,
+          specialDefense: entry.pokemon.specialDefense,
+          speed: entry.pokemon.speed
+        },
+        rarity: 'COMMON', // TODO: Calculate rarity from stats
         generation: entry.pokemon.generation
       },
       nickname: entry.nickname,
@@ -193,7 +199,7 @@ export class RosterService {
    * Get specific Pokemon from roster
    */
   async getRosterPokemon(userId: string, rosterPokemonId: string): Promise<RosterPokemon | null> {
-    const entry = await prisma.rosterEntry.findFirst({
+    const entry = await prisma.userRoster.findFirst({
       where: {
         id: rosterPokemonId,
         userId
@@ -633,7 +639,7 @@ export class RosterService {
    * Calculate roster statistics
    */
   private async calculateRosterStats(userId: string): Promise<RosterStats> {
-    const roster = await prisma.rosterEntry.findMany({
+    const roster = await prisma.userRoster.findMany({
       where: { userId },
       include: { pokemon: true }
     });
@@ -653,18 +659,13 @@ export class RosterService {
     let maxLevel = 0;
 
     for (const entry of roster) {
-      // Rarity stats
-      const rarity = entry.pokemon.rarity;
+      // Rarity stats (using generation as proxy for rarity)
+      const rarity = entry.pokemon.generation <= 2 ? 'COMMON' : 'RARE';
       stats.byRarity[rarity] = (stats.byRarity[rarity] || 0) + 1;
 
-      // Type stats
-      const type1 = entry.pokemon.type1;
+      // Type stats (simplified - using 'normal' for now since we don't have type relations)
+      const type1 = 'normal';
       stats.byType[type1] = (stats.byType[type1] || 0) + 1;
-      
-      if (entry.pokemon.type2) {
-        const type2 = entry.pokemon.type2;
-        stats.byType[type2] = (stats.byType[type2] || 0) + 1;
-      }
 
       // Generation stats
       const generation = entry.pokemon.generation.toString();

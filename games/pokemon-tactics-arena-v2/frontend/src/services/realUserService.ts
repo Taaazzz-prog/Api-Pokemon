@@ -82,11 +82,11 @@ class RealUserService {
   }
 
   // Récupérer le roster de Pokémon depuis l'API
-  async getUserRoster(): Promise<OwnedPokemon[]> {
+  async getUserRoster(): Promise<{pokemon: OwnedPokemon[], total: number}> {
     try {
       if (!apiClient.isAuthenticated()) {
         console.log('❌ Utilisateur non authentifié');
-        return [];
+        return {pokemon: [], total: 0};
       }
 
       const roster = await apiClient.getUserRoster();
@@ -94,7 +94,7 @@ class RealUserService {
       return roster;
     } catch (error: any) {
       console.error('❌ Erreur lors de la récupération du roster:', error);
-      return [];
+      return {pokemon: [], total: 0};
     }
   }
 

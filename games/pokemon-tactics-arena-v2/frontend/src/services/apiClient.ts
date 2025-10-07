@@ -27,8 +27,12 @@ export interface AuthResponse {
 class ApiClient {
   private api: AxiosInstance;
   private token: string | null = null;
+  private readonly TOKEN_KEY = 'pokemon_arena_auth_token';
 
   constructor() {
+    // Restaurer le token depuis localStorage au démarrage
+    this.loadTokenFromStorage();
+
     this.api = axios.create({
       baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3001/api',
       headers: {
@@ -69,10 +73,39 @@ class ApiClient {
     );
   }
 
-  // Gestion des tokens
+  // Gestion des tokens avec localStorage
+  private loadTokenFromStorage(): void {
+    try {
+      const savedToken = localStorage.getItem(this.TOKEN_KEY);
+      if (savedToken) {
+        this.token = savedToken;
+        console.log('🔐 Token restauré depuis localStorage');
+      }
+    } catch (error) {
+      console.error('❌ Erreur lors de la lecture du token:', error);
+    }
+  }
+
+  private saveTokenToStorage(token: string): void {
+    try {
+      localStorage.setItem(this.TOKEN_KEY, token);
+    } catch (error) {
+      console.error('❌ Erreur lors de la sauvegarde du token:', error);
+    }
+  }
+
+  private removeTokenFromStorage(): void {
+    try {
+      localStorage.removeItem(this.TOKEN_KEY);
+    } catch (error) {
+      console.error('❌ Erreur lors de la suppression du token:', error);
+    }
+  }
+
   setToken(token: string): void {
     this.token = token;
-    console.log('🔐 Token d\'authentification défini');
+    this.saveTokenToStorage(token);
+    console.log('🔐 Token d\'authentification défini et sauvegardé');
   }
 
   getToken(): string | null {
@@ -81,6 +114,7 @@ class ApiClient {
 
   clearToken(): void {
     this.token = null;
+    this.removeTokenFromStorage();
     console.log('🔓 Token d\'authentification supprimé');
   }
 
@@ -91,15 +125,19 @@ class ApiClient {
   // Méthodes d'authentification
   async login(credentials: LoginRequest): Promise<AuthResponse> {
     try {
-      const response = await this.api.post<AuthResponse>('/auth/login', credentials);
-      const data = response.data;
+      const response = await this.api.post<ApiResponse<AuthResponse>>('/auth/login', credentials);
+      const apiData = response.data;
       
-      if (data.token) {
-        this.setToken(data.token);
+      if (apiData.success && apiData.data) {
+        if (apiData.data.token) {
+          this.setToken(apiData.data.token);
+        }
+        
+        console.log('✅ Connexion réussie');
+        return apiData.data; // Retourne directement data.data qui contient { user, token, ... }
+      } else {
+        throw new Error(apiData.error || 'Erreur de connexion');
       }
-      
-      console.log('✅ Connexion réussie');
-      return data;
     } catch (error: any) {
       console.error('❌ Erreur de connexion:', error.response?.data?.error || error.message);
       throw error;
@@ -108,15 +146,19 @@ class ApiClient {
 
   async register(userData: RegisterRequest): Promise<AuthResponse> {
     try {
-      const response = await this.api.post<AuthResponse>('/auth/register', userData);
-      const data = response.data;
+      const response = await this.api.post<ApiResponse<AuthResponse>>('/auth/register', userData);
+      const apiData = response.data;
       
-      if (data.token) {
-        this.setToken(data.token);
+      if (apiData.success && apiData.data) {
+        if (apiData.data.token) {
+          this.setToken(apiData.data.token);
+        }
+        
+        console.log('✅ Inscription réussie');
+        return apiData.data; // Retourne directement data.data qui contient { user, token, ... }
+      } else {
+        throw new Error(apiData.error || 'Erreur d\'inscription');
       }
-      
-      console.log('✅ Inscription réussie');
-      return data;
     } catch (error: any) {
       console.error('❌ Erreur d\'inscription:', error.response?.data?.error || error.message);
       throw error;
@@ -177,11 +219,11 @@ class ApiClient {
 
   // Méthodes spécifiques pour les utilisateurs
   async getCurrentUser(): Promise<any> {
-    return this.get('/users/profile');
+    return this.get('/auth/me');
   }
 
   async updateUserProfile(data: any): Promise<any> {
-    return this.put('/users/profile', data);
+    return this.put('/auth/profile', data);
   }
 
   // Méthodes pour les Pokémon

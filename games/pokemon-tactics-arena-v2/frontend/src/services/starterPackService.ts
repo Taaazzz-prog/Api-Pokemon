@@ -1,5 +1,5 @@
 import { Pokemon, realPokemonData } from './realPokemonData';
-import { realUserService, OwnedPokemon } from './realUserService';
+import { apiClient } from './apiClient';
 
 export interface StarterPackResult {
   pokemon: Pokemon[];
@@ -116,43 +116,22 @@ export class StarterPackService {
    */
   async applyStarterPack(starterPack: StarterPackResult): Promise<void> {
     try {
-      const user = await realUserService.getCurrentUser();
+      console.log('🎁 Début application du starter pack...');
       
-      // Ajouter les Pokemon au roster de l'utilisateur
-      const newPokemon = starterPack.pokemon.map(pokemon => ({
-        id: pokemon.id,
-        nickname: null,
-        level: 5, // Les Pokemon de démarrage commencent au niveau 5
-        experience: 0,
-        isShiny: Math.random() < 0.05, // 5% de chance d'être shiny
-        obtainedAt: new Date().toISOString(),
-        obtainedFrom: 'starter_pack'
-      }));
-
-      const updatedOwnedPokemon = [
-        ...(user.ownedPokemon || []),
-        ...newPokemon
-      ];
-
-      // Mettre à jour l'utilisateur
+      // Pour l'instant, on marque simplement que l'utilisateur a reçu son starter pack
+      // Le backend devrait gérer l'ajout des Pokemon au roster via une API dédiée
       const updateData = {
-        ownedPokemon: updatedOwnedPokemon,
         hasReceivedStarterPack: true,
-        pokeCredits: 3000, // Crédits de démarrage (2500 de base + 500 bonus)
-        pokeGems: 55 // Gemmes de démarrage (50 de base + 5 bonus)
+        pokeCredits: 3000, // Crédits de démarrage
+        pokeGems: 55 // Gemmes de démarrage
       };
       
       console.log('📦 Application du starter pack - données à sauvegarder:', updateData);
       
-      const updatedUser = await realUserService.updateUser(updateData);
+      const updatedUser = await apiClient.updateUserProfile(updateData);
       
-      console.log('✅ Starter pack appliqué avec succès - utilisateur mis à jour:', {
-        hasReceivedStarterPack: updatedUser.hasReceivedStarterPack,
-        pokemonCount: updatedUser.ownedPokemon?.length || 0,
-        pokeCredits: updatedUser.pokeCredits,
-        pokeGems: updatedUser.pokeGems
-      });
-
+      console.log('✅ Starter pack appliqué avec succès');
+      
     } catch (error) {
       console.error('Erreur lors de l\'application du starter pack:', error);
       throw error;
@@ -162,15 +141,22 @@ export class StarterPackService {
   /**
    * Vérifier si un utilisateur a déjà reçu son starter pack
    */
-  async hasReceivedStarterPack(): Promise<boolean> {
+  hasReceivedStarterPack(user: any): boolean {
     try {
-      const user = await realUserService.getCurrentUser();
       console.log('🔍 Vérification starter pack - utilisateur:', {
-        id: user.id,
-        hasReceivedStarterPack: user.hasReceivedStarterPack,
+        id: user?.id,
+        hasReceivedStarterPack: user?.hasReceivedStarterPack,
+        pokeCredits: user?.pokeCredits,
+        pokeGems: user?.pokeGems,
         fullUser: user
       });
-      return user.hasReceivedStarterPack || false;
+      
+      // Si le champ hasReceivedStarterPack existe et est true
+      if (user?.hasReceivedStarterPack === true) {
+        return true;
+      }
+      
+      return false;
     } catch (error) {
       console.error('Erreur lors de la vérification du starter pack:', error);
       return false;

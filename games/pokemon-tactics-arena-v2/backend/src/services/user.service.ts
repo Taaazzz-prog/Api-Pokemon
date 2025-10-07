@@ -197,6 +197,7 @@ export class UserService {
         experience: user.profile?.experience || 0,
         pokeCredits: user.profile?.pokeCredits || 0,
         pokeGems: user.profile?.pokeGems || 0,
+        hasReceivedStarterPack: user.profile?.hasReceivedStarterPack || false,
         avatar: user.profile?.avatar,
         stats: {
           totalBattles: user.profile?.totalBattles || 0,
@@ -234,6 +235,11 @@ export class UserService {
           username: updates.username || user.profile?.username,
           avatar: updates.avatar || user.profile?.avatar,
           settings: updates.settings || user.profile?.settings || {},
+          // Support pour les crédits et gemmes
+          pokeCredits: updates.pokeCredits !== undefined ? updates.pokeCredits : user.profile?.pokeCredits,
+          pokeGems: updates.pokeGems !== undefined ? updates.pokeGems : user.profile?.pokeGems,
+          // Support pour le starter pack
+          hasReceivedStarterPack: updates.hasReceivedStarterPack !== undefined ? updates.hasReceivedStarterPack : user.profile?.hasReceivedStarterPack,
         }
       });
 
