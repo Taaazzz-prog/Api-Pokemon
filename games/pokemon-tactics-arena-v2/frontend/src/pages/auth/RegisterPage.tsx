@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/RealAuthContext';
+import { useUser } from '../../contexts/UserContext';
 import { RegisterRequest } from '../../services/api/auth';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
@@ -10,7 +10,7 @@ import { EyeIcon, EyeSlashIcon, UserIcon, EnvelopeIcon } from '@heroicons/react/
 
 const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
-  const { register, isLoading } = useAuth();
+  const { register, isLoading } = useUser();
   
   const [formData, setFormData] = useState<RegisterRequest>({
     email: '',
@@ -90,7 +90,7 @@ const RegisterPage: React.FC = () => {
     }
     
     try {
-      await register(formData);
+      await register(formData.email, formData.password, formData.username);
       navigate('/dashboard');
     } catch (error) {
       // Error is handled by AuthContext with toast

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { pokemonGameService, type Pokemon } from '../services/pokemonGameService';
-import { useAuth } from '../contexts/RealAuthContext';
+import { useUser } from '../contexts/UserContext';
 import { toast } from 'react-hot-toast';
 
 interface ShopPageRealProps {
@@ -12,7 +12,7 @@ const ShopPageReal: React.FC<ShopPageRealProps> = ({ className = '' }) => {
   const [selectedType, setSelectedType] = useState<string>('all');
   const [selectedRarity, setSelectedRarity] = useState<string>('all');
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user } = useUser();
 
   // Récupère les Pokemon du shop
   const { data: shopPokemon = [], isLoading: isLoadingShop } = useQuery({

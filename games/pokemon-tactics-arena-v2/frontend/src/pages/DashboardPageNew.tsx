@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAuth } from '../contexts/RealAuthContext';
+import { useUser } from '../contexts/UserContext';
 import { useRoster, useArenaStats } from '../hooks/useGameServices';
 import { useStarterPack } from '../hooks/useStarterPack';
 import { getRarityBorderClasses, getRarityConfig } from '../utils/rarityUtils';
@@ -10,7 +10,7 @@ import StarterPackModal from '../components/StarterPackModal';
 import { Link } from 'react-router-dom';
 
 const DashboardPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user } = useUser();
   const { data: roster, isLoading: rosterLoading } = useRoster();
   const { data: arenaStats, isLoading: arenaLoading } = useArenaStats();
   
@@ -52,9 +52,8 @@ const DashboardPage: React.FC = () => {
                 size="sm"
                 variant="warning"
                 onClick={async () => {
-                  // Vérifier l'état actuel
-                  const userData = localStorage.getItem('pokemon-tactics-user');
-                  console.log('📊 Données actuelles:', userData ? JSON.parse(userData) : 'Aucune');
+                  // Vérifier l'état actuel de l'utilisateur connecté
+                  console.log('📊 Utilisateur actuel:', user);
                 }}
               >
                 🔍 Vérifier Données

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/RealAuthContext';
+import { useUser } from '../../contexts/UserContext';
 import { LoginRequest } from '../../services/api/auth';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
@@ -10,7 +10,7 @@ import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const { login, isLoading } = useAuth();
+  const { login, isLoading } = useUser();
   
   const [formData, setFormData] = useState<LoginRequest>({
     email: '',
@@ -56,7 +56,7 @@ const LoginPage: React.FC = () => {
     }
     
     try {
-      await login(formData);
+      await login(formData.email, formData.password);
       navigate('/dashboard');
     } catch (error) {
       // Error is handled by AuthContext with toast

@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAuth } from '../contexts/RealAuthContext';
+import { useUser } from '../contexts/UserContext';
 import {
   BellIcon,
   Cog6ToothIcon,
@@ -8,7 +8,7 @@ import {
 import Button from './ui/Button';
 
 const Header: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, logout } = useUser();
 
   const handleLogout = () => {
     logout();

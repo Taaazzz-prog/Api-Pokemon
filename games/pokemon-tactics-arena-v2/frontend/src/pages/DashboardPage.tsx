@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAuth } from '../contexts/RealAuthContext';
+import { useUser } from '../contexts/UserContext';
 import { useRoster, useArenaStats } from '../hooks/useGameServices';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -15,7 +15,7 @@ import {
 import { Link } from 'react-router-dom';
 
 const DashboardPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user } = useUser();
   const { data: roster, isLoading: rosterLoading } = useRoster();
   const { data: arenaStats, isLoading: arenaLoading } = useArenaStats();
 

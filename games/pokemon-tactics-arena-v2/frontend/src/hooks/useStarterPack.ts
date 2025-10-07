@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/RealAuthContext';
+import { useUser } from '../contexts/UserContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { starterPackService, StarterPackResult } from '../services/starterPackService';
 import { toast } from 'react-hot-toast';
 
 export const useStarterPack = () => {
-  const { user, refreshUser } = useAuth();
+  const { user, refreshUser } = useUser();
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [starterPack, setStarterPack] = useState<StarterPackResult | null>(null);

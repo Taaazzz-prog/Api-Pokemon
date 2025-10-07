@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/RealAuthContext';
+import { useUser } from '../contexts/UserContext';
 import {
   HomeIcon,
   UserGroupIcon,
@@ -87,7 +87,7 @@ const navigation: NavItem[] = [
 ];
 
 const Sidebar: React.FC = () => {
-  const { user } = useAuth();
+  const { user } = useUser();
   const location = useLocation();
 
   return (

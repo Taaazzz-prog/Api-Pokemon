@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { useShopItems, usePurchaseItem } from '../hooks/useGameServices';
-import { useAuth } from '../contexts/RealAuthContext';
+import { useUser } from '../contexts/UserContext';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 
 const ShopPageNew: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const { user } = useAuth();
+  const { user } = useUser();
   const { data: shopItems, isLoading, error } = useShopItems(selectedCategory);
   const purchaseMutation = usePurchaseItem();
 
