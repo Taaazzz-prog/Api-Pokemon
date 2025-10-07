@@ -63,6 +63,7 @@ services:
       - "3001:3001"
     command: >
       sh -c "cd backend && 
+             echo 'Démarrage du serveur sans migration Prisma...' &&
              node dist/server.js"
     volumes:
       - pokemon-backend-logs:/app/logs

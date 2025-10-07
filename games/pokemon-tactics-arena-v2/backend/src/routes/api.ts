@@ -8,11 +8,110 @@ import { authenticate, AuthRequest } from '../middleware/auth';
 import { validateRequest } from '../middleware/validation';
 import { z } from 'zod';
 import authRouter from './auth';
+import { prisma } from '../database/connection';
 
 const router = Router();
 
 // Authentication routes
 router.use('/auth', authRouter);
+
+// Pokemon Routes
+router.get('/pokemon', async (req, res) => {
+  try {
+    const page = req.query.page ? parseInt(req.query.page as string) : 1;
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
+    const search = req.query.search as string;
+    const type = req.query.type as string;
+    const generation = req.query.generation ? parseInt(req.query.generation as string) : undefined;
+
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+    if (search) {
+      where.name = {
+        contains: search,
+        mode: 'insensitive'
+      };
+    }
+    if (type) {
+      where.types = {
+        array_contains: [type]
+      };
+    }
+    if (generation) {
+      where.generation = generation;
+    }
+
+    const [pokemon, total] = await Promise.all([
+      prisma.pokemon.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: {
+          id: 'asc'
+        }
+      }),
+      prisma.pokemon.count({ where })
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        pokemon,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      }
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+router.get('/pokemon/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Try to find by UUID first, then by pokemonId
+    let pokemon = await prisma.pokemon.findUnique({
+      where: {
+        id: id
+      }
+    });
+
+    // If not found by UUID, try by pokemonId (numeric)
+    if (!pokemon && !isNaN(parseInt(id))) {
+      pokemon = await prisma.pokemon.findUnique({
+        where: {
+          pokemonId: parseInt(id)
+        }
+      });
+    }
+
+    if (!pokemon) {
+      return res.status(404).json({
+        success: false,
+        error: 'Pokemon not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: pokemon
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
 
 // Shop Routes
 router.get('/shop/catalog', authenticate, async (req, res) => {
