@@ -1,7 +1,10 @@
-// Service utilisateur réel pour remplacer les données mockées
+// Service utilisateur réel utilisant l'API backend au lieu du localStorage
+
+import { apiClient } from './apiClient';
 
 export interface OwnedPokemon {
-  id: number;
+  id: string;
+  pokemonId: number;
   nickname: string | null;
   level: number;
   experience: number;
@@ -43,202 +46,167 @@ export interface UserStats {
   achievementsUnlocked: number;
 }
 
-// Utilisateur réel par défaut avec données de départ
-export const defaultUser: RealUser = {
-  id: "real-user-001",
-  email: "trainer@pokemon.com",
-  username: "PokemonTrainer",
-  level: 1,
-  experience: 0,
-  pokeCredits: 2500,
-  pokeGems: 50,
-  coins: 1000,
-  avatar: "/images/trainers/default.png",
-  ownedPokemon: [], // Vide par défaut - sera rempli par le starter pack
-  hasReceivedStarterPack: false,
-  teams: [
-    {
-      id: "starter-team",
-      name: "Équipe de départ",
-      pokemonIds: [1, 4, 7],
-      createdAt: new Date(),
-      isActive: true
+class RealUserService {
+  // Récupérer le profil utilisateur depuis l'API
+  async getUser(): Promise<RealUser | null> {
+    try {
+      if (!apiClient.isAuthenticated()) {
+        console.log('❌ Utilisateur non authentifié');
+        return null;
+      }
+
+      const userData = await apiClient.getCurrentUser();
+      console.log('✅ Profil utilisateur récupéré depuis l\'API:', userData);
+      return userData;
+    } catch (error: any) {
+      console.error('❌ Erreur lors de la récupération du profil utilisateur:', error);
+      return null;
     }
-  ],
-  stats: {
-    totalBattles: 0,
-    battlesWon: 0,
-    battlesLost: 0,
-    survivalBestWave: 0,
-    tournamentWins: 0,
-    achievementsUnlocked: 0
   }
-};
 
-// Service de gestion utilisateur réel
-export const realUserService = {
-  // Récupérer l'utilisateur actuel
-  getCurrentUser: async (): Promise<RealUser> => {
-    // Dans une vraie app, cela ferait appel à l'API
-    const userData = localStorage.getItem('pokemon-tactics-user');
-    console.log('📱 Récupération utilisateur depuis localStorage:', userData ? JSON.parse(userData) : 'Aucune donnée');
-    
-    if (userData) {
-      const parsed = JSON.parse(userData);
-      return {
-        ...parsed,
-        teams: parsed.teams?.map((team: any) => ({
-          ...team,
-          createdAt: new Date(team.createdAt)
-        })) || []
-      };
+  // Mettre à jour le profil utilisateur via l'API
+  async updateUser(updates: Partial<RealUser>): Promise<RealUser | null> {
+    try {
+      if (!apiClient.isAuthenticated()) {
+        console.log('❌ Utilisateur non authentifié');
+        return null;
+      }
+
+      const updatedUser = await apiClient.updateUserProfile(updates);
+      console.log('✅ Profil utilisateur mis à jour via l\'API:', updatedUser);
+      return updatedUser;
+    } catch (error: any) {
+      console.error('❌ Erreur lors de la mise à jour du profil:', error);
+      return null;
     }
-    
-    console.log('🆕 Création d\'un nouvel utilisateur par défaut');
-    // Sauvegarder l'utilisateur par défaut
-    localStorage.setItem('pokemon-tactics-user', JSON.stringify(defaultUser));
-    return defaultUser;
-  },
-
-  // Mettre à jour l'utilisateur
-  updateUser: async (updates: Partial<RealUser>): Promise<RealUser> => {
-    const currentUser = await realUserService.getCurrentUser();
-    const updatedUser = { ...currentUser, ...updates };
-    
-    console.log('💾 Mise à jour utilisateur:', {
-      before: currentUser,
-      updates: updates,
-      after: updatedUser
-    });
-    
-    localStorage.setItem('pokemon-tactics-user', JSON.stringify(updatedUser));
-    
-    // Vérification que la sauvegarde a bien fonctionné
-    const saved = localStorage.getItem('pokemon-tactics-user');
-    console.log('✅ Données sauvegardées:', saved ? JSON.parse(saved) : 'Erreur de sauvegarde');
-    
-    return updatedUser;
-  },
-
-  // Authentification simple
-  login: async (email: string, password: string): Promise<{ token: string; user: RealUser }> => {
-    // Simulation de connexion - dans une vraie app, validation backend
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    const user = await realUserService.getCurrentUser();
-    return {
-      token: `real-jwt-token-${Date.now()}`,
-      user: { ...user, email }
-    };
-  },
-
-  // Inscription simple
-  register: async (email: string, password: string, username: string): Promise<{ token: string; user: RealUser }> => {
-    // Simulation d'inscription - dans une vraie app, création backend
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    const newUser: RealUser = {
-      ...defaultUser,
-      id: `real-user-${Date.now()}`,
-      email,
-      username
-    };
-    
-    localStorage.setItem('pokemon-tactics-user', JSON.stringify(newUser));
-    
-    return {
-      token: `real-jwt-token-${Date.now()}`,
-      user: newUser
-    };
-  },
-
-  // Ajouter un Pokémon à la collection
-  addPokemonToCollection: async (pokemonId: number): Promise<RealUser> => {
-    const user = await realUserService.getCurrentUser();
-    const alreadyOwned = user.ownedPokemon.some(owned => owned.id === pokemonId);
-    
-    if (!alreadyOwned) {
-      const newOwnedPokemon: OwnedPokemon = {
-        id: pokemonId,
-        nickname: null,
-        level: 1,
-        experience: 0,
-        isShiny: Math.random() < 0.05, // 5% de chance d'être shiny
-        obtainedAt: new Date().toISOString(),
-        obtainedFrom: 'shop'
-      };
-      user.ownedPokemon.push(newOwnedPokemon);
-    }
-    return realUserService.updateUser(user);
-  },
-
-  // Dépenser des crédits
-  spendCredits: async (amount: number): Promise<RealUser> => {
-    const user = await realUserService.getCurrentUser();
-    if (user.pokeCredits >= amount) {
-      user.pokeCredits -= amount;
-      return realUserService.updateUser(user);
-    }
-    throw new Error('Crédits insuffisants');
-  },
-
-  // Gagner des crédits
-  earnCredits: async (amount: number): Promise<RealUser> => {
-    const user = await realUserService.getCurrentUser();
-    user.pokeCredits += amount;
-    return realUserService.updateUser(user);
-  },
-
-  // Créer une équipe
-  createTeam: async (name: string, pokemonIds: number[]): Promise<RealUser> => {
-    const user = await realUserService.getCurrentUser();
-    const newTeam: Team = {
-      id: `team-${Date.now()}`,
-      name,
-      pokemonIds: pokemonIds.slice(0, 6), // Maximum 6 Pokémon par équipe
-      createdAt: new Date(),
-      isActive: false
-    };
-    
-    user.teams.push(newTeam);
-    return realUserService.updateUser(user);
-  },
-
-  // Mettre à jour une équipe
-  updateTeam: async (teamId: string, updates: Partial<Team>): Promise<RealUser> => {
-    const user = await realUserService.getCurrentUser();
-    const teamIndex = user.teams.findIndex(t => t.id === teamId);
-    if (teamIndex !== -1) {
-      user.teams[teamIndex] = { ...user.teams[teamIndex], ...updates };
-    }
-    return realUserService.updateUser(user);
-  },
-
-  // Supprimer une équipe
-  deleteTeam: async (teamId: string): Promise<RealUser> => {
-    const user = await realUserService.getCurrentUser();
-    user.teams = user.teams.filter(t => t.id !== teamId);
-    return realUserService.updateUser(user);
-  },
-
-  // Mettre à jour les statistiques après un combat
-  updateBattleStats: async (won: boolean, experience: number = 0): Promise<RealUser> => {
-    const user = await realUserService.getCurrentUser();
-    user.stats.totalBattles++;
-    if (won) {
-      user.stats.battlesWon++;
-    } else {
-      user.stats.battlesLost++;
-    }
-    user.experience += experience;
-    
-    // Calcul du niveau basé sur l'expérience
-    const newLevel = Math.floor(user.experience / 1000) + 1;
-    if (newLevel > user.level) {
-      user.level = newLevel;
-      user.pokeCredits += 100; // Bonus de niveau
-    }
-    
-    return realUserService.updateUser(user);
   }
-};
+
+  // Récupérer le roster de Pokémon depuis l'API
+  async getUserRoster(): Promise<OwnedPokemon[]> {
+    try {
+      if (!apiClient.isAuthenticated()) {
+        console.log('❌ Utilisateur non authentifié');
+        return [];
+      }
+
+      const roster = await apiClient.getUserRoster();
+      console.log('✅ Roster récupéré depuis l\'API:', roster);
+      return roster;
+    } catch (error: any) {
+      console.error('❌ Erreur lors de la récupération du roster:', error);
+      return [];
+    }
+  }
+
+  // Ajouter un Pokémon au roster via l'API
+  async addPokemonToRoster(pokemonId: number, data?: Partial<OwnedPokemon>): Promise<OwnedPokemon | null> {
+    try {
+      if (!apiClient.isAuthenticated()) {
+        console.log('❌ Utilisateur non authentifié');
+        return null;
+      }
+
+      const newPokemon = await apiClient.addPokemonToRoster(pokemonId, data);
+      console.log('✅ Pokémon ajouté au roster via l\'API:', newPokemon);
+      return newPokemon;
+    } catch (error: any) {
+      console.error('❌ Erreur lors de l\'ajout du Pokémon au roster:', error);
+      return null;
+    }
+  }
+
+  // Supprimer un Pokémon du roster via l'API
+  async removePokemonFromRoster(rosterPokemonId: string): Promise<boolean> {
+    try {
+      if (!apiClient.isAuthenticated()) {
+        console.log('❌ Utilisateur non authentifié');
+        return false;
+      }
+
+      await apiClient.removePokemonFromRoster(rosterPokemonId);
+      console.log('✅ Pokémon supprimé du roster via l\'API');
+      return true;
+    } catch (error: any) {
+      console.error('❌ Erreur lors de la suppression du Pokémon du roster:', error);
+      return false;
+    }
+  }
+
+  // Récupérer les équipes depuis l'API
+  async getUserTeams(): Promise<Team[]> {
+    try {
+      if (!apiClient.isAuthenticated()) {
+        console.log('❌ Utilisateur non authentifié');
+        return [];
+      }
+
+      const teams = await apiClient.getUserTeams();
+      console.log('✅ Équipes récupérées depuis l\'API:', teams);
+      return teams;
+    } catch (error: any) {
+      console.error('❌ Erreur lors de la récupération des équipes:', error);
+      return [];
+    }
+  }
+
+  // Créer une nouvelle équipe via l'API
+  async createTeam(teamData: Omit<Team, 'id' | 'createdAt'>): Promise<Team | null> {
+    try {
+      if (!apiClient.isAuthenticated()) {
+        console.log('❌ Utilisateur non authentifié');
+        return null;
+      }
+
+      const newTeam = await apiClient.createTeam(teamData);
+      console.log('✅ Équipe créée via l\'API:', newTeam);
+      return newTeam;
+    } catch (error: any) {
+      console.error('❌ Erreur lors de la création de l\'équipe:', error);
+      return null;
+    }
+  }
+
+  // Mettre à jour une équipe via l'API
+  async updateTeam(teamId: string, teamData: Partial<Team>): Promise<Team | null> {
+    try {
+      if (!apiClient.isAuthenticated()) {
+        console.log('❌ Utilisateur non authentifié');
+        return null;
+      }
+
+      const updatedTeam = await apiClient.updateTeam(teamId, teamData);
+      console.log('✅ Équipe mise à jour via l\'API:', updatedTeam);
+      return updatedTeam;
+    } catch (error: any) {
+      console.error('❌ Erreur lors de la mise à jour de l\'équipe:', error);
+      return null;
+    }
+  }
+
+  // Supprimer une équipe via l'API
+  async deleteTeam(teamId: string): Promise<boolean> {
+    try {
+      if (!apiClient.isAuthenticated()) {
+        console.log('❌ Utilisateur non authentifié');
+        return false;
+      }
+
+      await apiClient.deleteTeam(teamId);
+      console.log('✅ Équipe supprimée via l\'API');
+      return true;
+    } catch (error: any) {
+      console.error('❌ Erreur lors de la suppression de l\'équipe:', error);
+      return false;
+    }
+  }
+
+  // Vérifier si l'utilisateur est authentifié
+  isAuthenticated(): boolean {
+    return apiClient.isAuthenticated();
+  }
+}
+
+// Instance singleton
+export const realUserService = new RealUserService();
+
+export default realUserService;

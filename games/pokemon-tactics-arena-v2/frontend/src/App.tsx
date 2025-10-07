@@ -2,7 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
-import { AuthProvider, useAuth } from './contexts/RealAuthContext';
+import { UserProvider, useUser } from './contexts/UserContext';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import DashboardPageNew from './pages/DashboardPageNew';
@@ -30,7 +30,7 @@ const queryClient = new QueryClient({
 
 // Protected Route component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, isAuthenticated } = useUser();
   
   if (isLoading) {
     return (
@@ -40,7 +40,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
     );
   }
   
-  if (!user) {
+  if (!isAuthenticated || !user) {
     return <Navigate to="/login" replace />;
   }
   
@@ -49,7 +49,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
 // Public Route component (redirect if already authenticated)
 const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, isAuthenticated } = useUser();
   
   if (isLoading) {
     return (
@@ -59,7 +59,7 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     );
   }
   
-  if (user) {
+  if (isAuthenticated && user) {
     return <Navigate to="/dashboard" replace />;
   }
   
@@ -69,7 +69,7 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
+      <UserProvider>
         <Router>
           <div className="App">
             <Routes>
@@ -143,7 +143,7 @@ const App: React.FC = () => {
             />
           </div>
         </Router>
-      </AuthProvider>
+      </UserProvider>
     </QueryClientProvider>
   );
 };

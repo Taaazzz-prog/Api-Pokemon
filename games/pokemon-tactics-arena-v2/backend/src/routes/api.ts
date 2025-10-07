@@ -7,8 +7,12 @@ import { tournamentService } from '../services/tournament.service';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { validateRequest } from '../middleware/validation';
 import { z } from 'zod';
+import authRouter from './auth';
 
 const router = Router();
+
+// Authentication routes
+router.use('/auth', authRouter);
 
 // Shop Routes
 router.get('/shop/catalog', authenticate, async (req, res) => {
