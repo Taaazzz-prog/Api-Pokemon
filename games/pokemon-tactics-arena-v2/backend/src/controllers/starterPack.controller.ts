@@ -2,12 +2,21 @@ import { Request, Response } from 'express';
 import starterPackService from '../services/starterPack.service';
 import { logger } from '../utils/logger';
 
+// Type extension for Request with user
+interface AuthenticatedRequest extends Request {
+  user?: {
+    id: string;
+    email: string;
+    role: string;
+  };
+}
+
 export class StarterPackController {
   
   /**
    * Get starter pack info
    */
-  async getStarterPackInfo(req: Request, res: Response): Promise<void> {
+  async getStarterPackInfo(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const userId = req.user?.id;
       if (!userId) {
@@ -35,7 +44,7 @@ export class StarterPackController {
   /**
    * Apply starter pack
    */
-  async applyStarterPack(req: Request, res: Response): Promise<void> {
+  async applyStarterPack(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const userId = req.user?.id;
       if (!userId) {
@@ -72,7 +81,7 @@ export class StarterPackController {
   /**
    * Check starter pack status
    */
-  async hasReceivedStarterPack(req: Request, res: Response): Promise<void> {
+  async hasReceivedStarterPack(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const userId = req.user?.id;
       if (!userId) {

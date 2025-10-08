@@ -1,219 +1,68 @@
-// @ts-nocheck
-import { PrismaClient } from '@prisma/client';
+import { Prisma, Currency, TransactionType, GameMode, BattleResult } from '@prisma/client';
+import { prisma } from '../database/connection';
 import { logger } from '../utils/logger';
 
-type Currency = 'POKE_CREDITS' | 'POKE_GEMS';
-type TransactionType = 'CREDIT' | 'DEBIT';
+export type CurrencyCode = Currency;
+export type TransactionKind = TransactionType;
 
-const Currency = {
-  POKE_CREDITS: 'POKE_CREDITS' as const,
-  POKE_GEMS: 'POKE_GEMS' as const,
-};
+interface OperationOptions {
+  metadata?: Prisma.JsonValue;
+  transaction?: Prisma.TransactionClient;
+}
 
-const TransactionType = {
-  CREDIT: 'CREDIT' as const,
-  DEBIT: 'DEBIT' as const,
-};
-
-const prisma = new PrismaClient();
-
-/**
- * Currency Service for managing PokeCredits and PokeGems
- */
-export class CurrencyService {
-  /**
-   * Get current balance for a user
-   */
+class CurrencyService {
   async getBalance(userId: string): Promise<{ pokeCredits: number; pokeGems: number }> {
     const profile = await prisma.userProfile.findUnique({
       where: { userId },
-      select: { pokeCredits: true, pokeGems: true }
+      select: { pokeCredits: true, pokeGems: true },
     });
 
-    return profile || { pokeCredits: 0, pokeGems: 0 };
+    return profile ?? { pokeCredits: 0, pokeGems: 0 };
   }
 
-  /**
-   * Add currency to user account
-   */
   async addCurrency(
     userId: string,
-    currency: Currency,
+    currency: CurrencyCode,
     amount: number,
     source: string,
-    metadata: Record<string, any> = {}
-  ): Promise<{ newBalance: number; transactionId: string }> {
-    if (amount <= 0) {
-      throw new Error('Amount must be positive');
-    }
-
-    return await prisma.$transaction(async (tx: any) => {
-      // Get current balance
-      const profile = await tx.userProfile.findUnique({
-        where: { userId },
-        select: {
-          pokeCredits: true,
-          pokeGems: true,
-        },
-      });
-
-      if (!profile) {
-        throw new Error('User profile not found');
-      }
-
-      const currentBalance = currency === Currency.POKE_CREDITS 
-        ? profile.pokeCredits 
-        : profile.pokeGems;
-      
-      const newBalance = currentBalance + amount;
-
-      // Update balance
-      await tx.userProfile.update({
-        where: { userId },
-        data: {
-          [currency === Currency.POKE_CREDITS ? 'pokeCredits' : 'pokeGems']: newBalance,
-        },
-      });
-
-      // Create transaction record
-      const transaction = await tx.transaction.create({
-        data: {
-          userId,
-          currency: currency as any,
-          type: TransactionType.CREDIT as any,
-          amount,
-          balanceBefore: currentBalance,
-          balanceAfter: newBalance,
-          source,
-          description: `Added ${amount} ${currency}`,
-          metadata: metadata as any,
-        },
-      });
-
-      logger.info(`Added ${amount} ${currency} to user ${userId}. New balance: ${newBalance}`);
-
-      return {
-        newBalance,
-        transactionId: transaction.id,
-      };
+    options: OperationOptions = {}
+  ) {
+    return this.adjustBalance(userId, currency, amount, TransactionType.CREDIT, {
+      source,
+      metadata: options.metadata,
+      transaction: options.transaction,
     });
   }
 
-  /**
-   * Remove currency from user account
-   */
   async removeCurrency(
     userId: string,
-    currency: Currency,
+    currency: CurrencyCode,
     amount: number,
     source: string,
-    metadata: Record<string, any> = {}
-  ): Promise<{ newBalance: number; transactionId: string }> {
-    if (amount <= 0) {
-      throw new Error('Amount must be positive');
-    }
-
-    return await prisma.$transaction(async (tx: any) => {
-      // Get current balance
-      const profile = await tx.userProfile.findUnique({
-        where: { userId },
-        select: {
-          pokeCredits: true,
-          pokeGems: true,
-        },
-      });
-
-      if (!profile) {
-        throw new Error('User profile not found');
-      }
-
-      const currentBalance = currency === Currency.POKE_CREDITS 
-        ? profile.pokeCredits 
-        : profile.pokeGems;
-
-      if (currentBalance < amount) {
-        throw new Error(`Insufficient ${currency}. Current: ${currentBalance}, Required: ${amount}`);
-      }
-      
-      const newBalance = currentBalance - amount;
-
-      // Update balance
-      await tx.userProfile.update({
-        where: { userId },
-        data: {
-          [currency === Currency.POKE_CREDITS ? 'pokeCredits' : 'pokeGems']: newBalance,
-        },
-      });
-
-      // Create transaction record
-      const transaction = await tx.transaction.create({
-        data: {
-          userId,
-          currency: currency as any,
-          type: TransactionType.DEBIT as any,
-          amount,
-          balanceBefore: currentBalance,
-          balanceAfter: newBalance,
-          source,
-          description: `Removed ${amount} ${currency}`,
-          metadata: metadata as any,
-        },
-      });
-
-      logger.info(`Removed ${amount} ${currency} from user ${userId}. New balance: ${newBalance}`);
-
-      return {
-        newBalance,
-        transactionId: transaction.id,
-      };
+    options: OperationOptions = {}
+  ) {
+    return this.adjustBalance(userId, currency, -Math.abs(amount), TransactionType.DEBIT, {
+      source,
+      metadata: options.metadata,
+      transaction: options.transaction,
     });
   }
 
-  /**
-   * Transfer currency between users
-   */
-  async transferCurrency(
-    fromUserId: string,
-    toUserId: string,
-    currency: Currency,
-    amount: number,
-    source: string = 'user_transfer',
-    metadata: Record<string, any> = {}
-  ): Promise<{ senderBalance: number; recipientBalance: number; transactionIds: string[] }> {
-    if (amount <= 0) {
-      throw new Error('Amount must be positive');
-    }
+  async canAfford(userId: string, costs: Array<{ currency: CurrencyCode; amount: number }>): Promise<boolean> {
+    const balance = await this.getBalance(userId);
 
-    return await prisma.$transaction(async (tx: any) => {
-      // Remove from sender
-      const senderResult = await this.removeCurrency(fromUserId, currency, amount, source, {
-        ...metadata,
-        transferTo: toUserId,
-      });
-
-      // Add to recipient
-      const recipientResult = await this.addCurrency(toUserId, currency, amount, source, {
-        ...metadata,
-        transferFrom: fromUserId,
-      });
-
-      logger.info(`Transferred ${amount} ${currency} from ${fromUserId} to ${toUserId}`);
-
-      return {
-        senderBalance: senderResult.newBalance,
-        recipientBalance: recipientResult.newBalance,
-        transactionIds: [senderResult.transactionId, recipientResult.transactionId],
-      };
+    return costs.every(({ currency, amount }) => {
+      if (currency === Currency.POKE_CREDITS) {
+        return balance.pokeCredits >= amount;
+      }
+      return balance.pokeGems >= amount;
     });
   }
 
-  /**
-   * Get transaction history for a user
-   */
   async getTransactionHistory(
     userId: string,
     options: {
-      currency?: Currency;
+      currency?: CurrencyCode;
       limit?: number;
       offset?: number;
       startDate?: Date;
@@ -222,8 +71,8 @@ export class CurrencyService {
   ) {
     const { currency, limit = 20, offset = 0, startDate, endDate } = options;
 
-    const where: any = { userId };
-    
+    const where: Prisma.TransactionWhereInput = { userId };
+
     if (currency) {
       where.currency = currency;
     }
@@ -251,131 +100,106 @@ export class CurrencyService {
     };
   }
 
-  /**
-   * Calculate daily login bonus
-   */
-  async calculateDailyBonus(userId: string, consecutiveDays: number = 1) {
+  getDailyBonus(consecutiveDays = 1): Array<{ currency: CurrencyCode; amount: number }> {
     const baseCredits = 50;
-    const baseGems = consecutiveDays >= 7 ? 2 : 1;
-    
-    // Bonus multiplier based on consecutive days
-    const multiplier = Math.min(1 + (consecutiveDays - 1) * 0.1, 2); // Max 2x multiplier
-    
-    return [
+    const multiplier = Math.min(1 + (consecutiveDays - 1) * 0.1, 2);
+    const rewards: Array<{ currency: CurrencyCode; amount: number }> = [
       { currency: Currency.POKE_CREDITS, amount: Math.floor(baseCredits * multiplier) },
-      ...(Math.random() < 0.1 ? [{ currency: Currency.POKE_GEMS, amount: 1 }] : []), // 10% chance for extra gem
     ];
+
+    if (Math.random() < 0.1) {
+      rewards.push({ currency: Currency.POKE_GEMS, amount: 1 });
+    }
+
+    return rewards;
   }
 
-  /**
-   * Calculate battle rewards based on performance
-   */
-  async calculateBattleRewards(
-    gameMode: string,
-    result: 'WIN' | 'LOSS' | 'DRAW',
-    performance: {
-      damage?: number;
-      survival?: number;
-      time?: number;
-    } = {}
-  ) {
-    const baseRewards = {
+  getBattleRewards(gameMode: GameMode, result: BattleResult): Array<{ currency: CurrencyCode; amount: number }> {
+    const baseRewards: Record<GameMode, { credits: number; gems: number }> = {
       FREE: { credits: 25, gems: 1 },
       SURVIVAL: { credits: 50, gems: 2 },
       TOURNAMENT: { credits: 100, gems: 5 },
       ARENA: { credits: 75, gems: 3 },
     };
 
-    const base = baseRewards[gameMode as keyof typeof baseRewards] || baseRewards.FREE;
-    const resultMultiplier = result === 'WIN' ? 1 : result === 'DRAW' ? 0.5 : 0.3;
-    
+    const multiplier = result === 'WIN' ? 1 : result === 'DRAW' ? 0.5 : 0.3;
+    const base = baseRewards[gameMode];
+
     return [
-      { currency: Currency.POKE_CREDITS, amount: Math.floor(base.credits * resultMultiplier) },
-      { currency: Currency.POKE_GEMS, amount: Math.floor(base.gems * resultMultiplier) },
+      { currency: Currency.POKE_CREDITS, amount: Math.floor(base.credits * multiplier) },
+      { currency: Currency.POKE_GEMS, amount: Math.floor(base.gems * multiplier) },
     ];
   }
 
-  /**
-   * Calculate achievement rewards
-   */
-  async calculateAchievementRewards(achievementTier: string) {
-    const gemRewards: Record<string, number> = {
-      bronze: 2,
-      silver: 5,
-      gold: 10,
-      legendary: 25,
-    };
-
+  getStarterRewards(): Array<{ currency: CurrencyCode; amount: number }> {
     return [
-      { currency: Currency.POKE_CREDITS, amount: 200 },
-      { currency: Currency.POKE_GEMS, amount: gemRewards[achievementTier] || 10 },
+      { currency: Currency.POKE_CREDITS, amount: 3000 },
+      { currency: Currency.POKE_GEMS, amount: 55 },
     ];
   }
 
-  /**
-   * Apply starter pack rewards
-   */
-  async applyStarterRewards(userId: string) {
-    return [
-      { currency: Currency.POKE_CREDITS, amount: 75 },
-    ];
-  }
-
-  /**
-   * Validate if user can afford a purchase
-   */
-  async canAfford(userId: string, costs: Array<{ currency: Currency; amount: number }>): Promise<boolean> {
-    const balance = await this.getBalance(userId);
-    
-    return costs.every(cost => {
-      const currentBalance = cost.currency === Currency.POKE_CREDITS 
-        ? balance.pokeCredits 
-        : balance.pokeGems;
-      return currentBalance >= cost.amount;
-    });
-  }
-
-  /**
-   * Process multiple currency operations atomically
-   */
-  async processMultipleTransactions(
+  private async adjustBalance(
     userId: string,
-    operations: Array<{
-      type: 'ADD' | 'REMOVE';
-      currency: Currency;
-      amount: number;
-      source: string;
-      metadata?: Record<string, any>;
-    }>
+    currency: CurrencyCode,
+    amount: number,
+    type: TransactionKind,
+    options: { source: string; metadata?: Prisma.JsonValue; transaction?: Prisma.TransactionClient }
   ) {
-    return await prisma.$transaction(async (tx: any) => {
-      const results = [];
-      
-      for (const op of operations) {
-        if (op.type === 'ADD') {
-          const result = await this.addCurrency(
-            userId,
-            op.currency,
-            op.amount,
-            op.source,
-            op.metadata
-          );
-          results.push(result);
-        } else {
-          const result = await this.removeCurrency(
-            userId,
-            op.currency,
-            op.amount,
-            op.source,
-            op.metadata
-          );
-          results.push(result);
-        }
-      }
-      
-      return results;
+    if (amount === 0) {
+      return { newBalance: await this.getCurrentBalance(userId, currency), transactionId: null };
+    }
+
+    const tx = options.transaction ?? prisma;
+
+    const profile = await tx.userProfile.findUnique({
+      where: { userId },
+      select: { pokeCredits: true, pokeGems: true },
     });
+
+    if (!profile) {
+      throw new Error('User profile not found');
+    }
+
+    const currentBalance = currency === Currency.POKE_CREDITS ? profile.pokeCredits : profile.pokeGems;
+    const newBalance = currentBalance + amount;
+
+    if (newBalance < 0) {
+      throw new Error(`Insufficient ${currency}. Current: ${currentBalance}, required: ${Math.abs(amount)}`);
+    }
+
+    await tx.userProfile.update({
+      where: { userId },
+      data: {
+        [currency === Currency.POKE_CREDITS ? 'pokeCredits' : 'pokeGems']: newBalance,
+      },
+    });
+
+    const transaction = await tx.transaction.create({
+      data: {
+        userId,
+        currency,
+        type,
+        amount: Math.abs(amount),
+        balanceBefore: currentBalance,
+        balanceAfter: newBalance,
+        source: options.source,
+        metadata: options.metadata ?? Prisma.JsonNull,
+      },
+    });
+
+    logger.info('Currency updated', { userId, currency, type, amount: Math.abs(amount), source: options.source });
+
+    return {
+      newBalance,
+      transactionId: transaction.id,
+    };
+  }
+
+  private async getCurrentBalance(userId: string, currency: CurrencyCode) {
+    const balance = await this.getBalance(userId);
+    return currency === Currency.POKE_CREDITS ? balance.pokeCredits : balance.pokeGems;
   }
 }
 
+export { CurrencyService };
 export const currencyService = new CurrencyService();

@@ -63,7 +63,9 @@ services:
       - "3001:3001"
     command: >
       sh -c "cd backend && 
-             echo 'Démarrage du serveur sans migration Prisma...' &&
+             echo 'Vérification et déploiement des migrations Prisma...' &&
+             npx prisma migrate deploy &&
+             echo 'Démarrage du serveur Pokemon Tactics Arena v2...' &&
              node dist/server.js"
     volumes:
       - pokemon-backend-logs:/app/logs
