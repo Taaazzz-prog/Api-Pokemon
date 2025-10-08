@@ -248,6 +248,10 @@ class ApiClient {
     return this.delete(`/roster/pokemon/${rosterPokemonId}`);
   }
 
+  async updateRosterNickname(rosterId: string, nickname: string): Promise<any> {
+    return this.put(`/roster/${rosterId}/nickname`, { nickname });
+  }
+
   // Méthodes pour la boutique
   async getShopCatalog(filters?: any): Promise<any> {
     return this.get('/shop/catalog', filters);

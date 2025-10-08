@@ -1,82 +1,27 @@
-# 🎯 PHASE 4 - NETTOYAGE MOCK DATA - PROGRESSION
+# Phase 4 – Nettoyage des mocks (état 06/10/2025)
 
-## ✅ TERMINÉ AVEC SUCCÈS
+## Résumé
+- ✅ Tous les services/plans mockés côté frontend supprimés. Les pages reposent soit sur les API Express, soit affichent un placeholder explicitant que la fonctionnalité arrive avec les prochains endpoints.
+- ✅ Services backend critiques (`roster`, `shop`, `starter-pack`) réalignés sur Prisma et exposés via `/api`.
+- ⚠️ Modules avancés (arène temps réel, tournois dynamiques, survie complète, moteur de combat) restent à implémenter. Les routes fournissent une réponse minimale et ne doivent pas être considérées comme finalisées.
+- ⚠️ Le reporting historique (intégrity, succès phase 4) a été mis à jour pour refléter cet état intermédiaire.
 
-### Services Mock Supprimés
-- ✅ `mockData.ts` - SUPPRIMÉ
-- ✅ `mockServices.ts` - SUPPRIMÉ  
-- ✅ `AuthContextMock.tsx` - SUPPRIMÉ
+## Frontend – État actuel
+| Domaine | Statut | Détails |
+| --- | --- | --- |
+| Dashboard | ✅ | Consomme `/starter-pack` et `/arena/stats`, affiche placeholders roadmap |
+| Roster | ✅ | Lecture + changement de surnom via API réelle |
+| Boutique | ✅ | Catalogue + achat REST (pas d'ouverture de packs côté client) |
+| Arène / Batailles / Survie / Tournois | 🚧 | Placeholder `FeaturePlaceholder` en attendant les endpoints correspondants |
 
-### Services Réels Créés
-- ✅ `realUserService.ts` - Service utilisateur complet avec auth, teams, stats
-- ✅ `realShopService.ts` - Service boutique avec articles, packs, achats
-- ✅ `realArenaService.ts` - Service arène avec stats, classement, matchmaking
-- ✅ `realTournamentService.ts` - Service tournois avec inscription, gestion
-- ✅ `realSurvivalService.ts` - Service mode survie avec stats, runs
-- ✅ `realPokemonData.ts` - 20+ Pokémon réels avec stats complètes
-- ✅ `pokemonGameService.ts` - Moteur de jeu principal
-- ✅ `RealAuthContext.tsx` - Contexte d'authentification production
+## Backend – État actuel
+- `prisma/schema.prisma` validé (`npx prisma validate`).
+- Migration initiale `20241004_init` régénérée pour refléter exactement le schéma actuel.
+- Seed crée types, starters (1/4/7), boutique minimale et utilisateur test.
+- Routes opérationnelles : `/api/roster`, `/api/shop`, `/api/starter-pack`, `/api/arena` (stats/rankings), `/api/tournaments` (CRUD minimal), `/api/survival` (start/end), `/api/v2/pokemon`.
+- Routes non encore rattachées : logique avancée arène/tournois/survie (matchmaking, brackets, récompenses temps réel).
 
-### Migration des Hooks
-- ✅ `useGameServices.ts` - Tous les mock services remplacés par real services
-  - ✅ useRoster → realUserService
-  - ✅ usePokemon → realUserService 
-  - ✅ useUpdatePokemonNickname → realUserService
-  - ✅ useShopItems → realShopService
-  - ✅ usePurchaseItem → realShopService
-  - ✅ useArenaStats → realArenaService
-  - ✅ useLeaderboard → realArenaService
-  - ✅ useFindMatch → realArenaService
-  - ✅ useTournaments → realTournamentService
-  - ✅ useJoinTournament → realTournamentService
-  - ✅ useSurvivalStats → realSurvivalService
-  - ✅ useStartSurvivalRun → realSurvivalService
-
-### Components Migrés
-- ✅ `App.tsx` - RealAuthContext
-- ✅ Toutes les pages auth - realUserService
-- ✅ `Sidebar.tsx` - RealAuthContext
-- ✅ `Header.tsx` - RealAuthContext
-- ✅ `DashboardPage.tsx` - Real services
-
-## 📊 ÉTAT ACTUEL : 138 ERREURS RESTANTES
-
-### Types d'Erreurs Restantes
-1. **Erreurs d'icônes (90%+)** - Problèmes de types React avec Heroicons SVG
-2. **Erreurs de structure** - Team.pokemon vs Team.pokemonIds (6 erreurs)
-3. **Imports inutilisés** - Variables non utilisées (quelques erreurs)
-
-### Erreurs de Structure Critique à Corriger
-```
-- Team.pokemon n'existe pas → utiliser Team.pokemonIds
-- RealUser.coins n'existe pas → ajouter propriété coins
-- Pokemon objects vs Pokemon IDs dans les listes
-```
-
-## 🎯 PROCHAINES ÉTAPES PRIORITAIRES
-
-### 1. Corriger Structure de Données (URGENT)
-- Fixer Team.pokemon → Team.pokemonIds dans survival service
-- Ajouter coins à RealUser interface
-- Corriger affichage Pokemon lists dans les pages
-
-### 2. Résoudre Erreurs d'Icônes (MOYENNE)
-- Fixer types Heroicons SVG components
-- Solution : Cast en 'any' temporairement ou fixer types
-
-### 3. Nettoyage Final (FAIBLE)
-- Supprimer imports inutilisés
-- Supprimer variables non utilisées
-
-## 🎉 RÉSULTAT MAJEUR
-
-**✅ OBJECTIF PRINCIPAL ATTEINT : Élimination complète des données mock !**
-
-L'application utilise maintenant exclusivement :
-- ✅ Services réels avec vraies données
-- ✅ 20+ Pokémon authentiques avec 1339+ images
-- ✅ Architecture de production robuste
-- ✅ Système d'authentification réel
-- ✅ Aucune dépendance mock restante
-
-**🚀 L'application est maintenant prête pour la production avec des données 100% réelles !**
+## Prochaines étapes
+1. Implémenter la logique gameplay manquante côté backend et remplacer les placeholders frontend par les appels API correspondants.
+2. Ajouter une campagne de tests unitaires/API/E2E et un script de seed (npm run seed) afin de fiabiliser les environnements.
+3. Documenter le démarrage complet (Docker compose simplifié, Traefik/monitoring) et maintenir `INTEGRITY_REPORT.md` à jour.

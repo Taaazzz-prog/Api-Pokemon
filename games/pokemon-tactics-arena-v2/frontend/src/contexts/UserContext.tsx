@@ -128,43 +128,12 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     try {
       dispatch({ type: 'LOGIN_START' });
       
-      try {
-        const response = await apiClient.login({ email, password });
-        
-        if (response.user) {
-          // Connexion réussie, récupérons le profil complet
-          console.log('✅ Connexion réussie, récupération du profil complet...');
-          await refreshUser(); // Récupère le profil complet depuis /auth/me
-          console.log('✅ Utilisateur connecté avec profil complet');
-        } else {
-          throw new Error('Données utilisateur manquantes dans la réponse');
-        }
-      } catch (apiError: any) {
-        // Si le backend n'est pas disponible, créer un utilisateur temporaire
-        if (apiError.code === 'ECONNREFUSED' || apiError.code === 'ERR_NETWORK') {
-          console.warn('⚠️ Mode offline activé - utilisation d\'un utilisateur temporaire');
-          const offlineUser: User = {
-            id: 'offline-user',
-            email,
-            username: email.split('@')[0],
-            level: 1,
-            experience: 0,
-            pokeCredits: 2500,
-            pokeGems: 50,
-            stats: {
-              totalBattles: 0,
-              totalWins: 0,
-              winRate: 0
-            }
-          };
-          
-          // Simuler un token
-          apiClient.setToken('offline-mock-token');
-          dispatch({ type: 'LOGIN_SUCCESS', payload: offlineUser });
-          console.log('✅ Utilisateur offline connecté:', offlineUser.username);
-          return;
-        }
-        throw apiError;
+      const response = await apiClient.login({ email, password });
+      
+      if (response.user) {
+        await refreshUser();
+      } else {
+        throw new Error('Données utilisateur manquantes dans la réponse');
       }
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || error.message || 'Erreur de connexion';

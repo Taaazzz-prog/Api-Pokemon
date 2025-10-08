@@ -1,468 +1,267 @@
-// @ts-nocheck
-import { PrismaClient } from '@prisma/client';
+import { Prisma, Currency } from '@prisma/client';
 import { prisma } from '../database/connection';
-import { CurrencyService } from './currency.service';
+import { currencyService } from './currency.service';
 import { logger } from '../utils/logger';
 
-export interface ShopItem {
+export interface ShopCatalogItem {
   id: string;
   name: string;
   description: string;
-  category: 'POKEMON_PACK' | 'ITEMS' | 'COSMETICS' | 'BOOSTS';
+  category: 'POKEMON_PACK' | 'CURRENCY';
   rarity: 'COMMON' | 'UNCOMMON' | 'RARE' | 'EPIC' | 'LEGENDARY';
-  price: {
-    credits?: number;
-    gems?: number;
-  };
-  metadata: {
-    packSize?: number;
-    duration?: number;
-    effect?: string;
-  };
+  prices: Array<{ currency: Currency; amount: number }>;
+  metadata?: Record<string, unknown>;
   isAvailable: boolean;
 }
 
 export interface PurchaseResult {
   success: boolean;
-  items: any[];
-  transaction: {
-    id: string;
-    cost: Array<{ currency: string; amount: number }>;
-  };
+  rewards: Array<Record<string, unknown>>;
+  cost: Array<{ currency: Currency; amount: number }>;
 }
 
-export class ShopService {
-  private currencyService = new CurrencyService();
+const SHOP_ITEMS: ShopCatalogItem[] = [
+  {
+    id: 'starter_pack',
+    name: 'Pack de démarrage',
+    description: 'Obtenez trois Pokémon aléatoires des premières générations.',
+    category: 'POKEMON_PACK',
+    rarity: 'COMMON',
+    prices: [{ currency: Currency.POKE_CREDITS, amount: 500 }],
+    metadata: { packSize: 3, maxGeneration: 2 },
+    isAvailable: true,
+  },
+  {
+    id: 'rare_pack',
+    name: 'Pack rare',
+    description: 'Garantit au moins un Pokémon rare.',
+    category: 'POKEMON_PACK',
+    rarity: 'RARE',
+    prices: [{ currency: Currency.POKE_GEMS, amount: 12 }],
+    metadata: { packSize: 4, guaranteedRarity: 'RARE', maxGeneration: 3 },
+    isAvailable: true,
+  },
+  {
+    id: 'credit_bundle_small',
+    name: 'Pack de crédits (petit)',
+    description: '+750 Poké-Crédits.',
+    category: 'CURRENCY',
+    rarity: 'COMMON',
+    prices: [{ currency: Currency.POKE_GEMS, amount: 3 }],
+    metadata: { reward: { currency: Currency.POKE_CREDITS, amount: 750 } },
+    isAvailable: true,
+  },
+  {
+    id: 'credit_bundle_large',
+    name: 'Pack de crédits (grand)',
+    description: '+2 000 Poké-Crédits.',
+    category: 'CURRENCY',
+    rarity: 'UNCOMMON',
+    prices: [{ currency: Currency.POKE_GEMS, amount: 7 }],
+    metadata: { reward: { currency: Currency.POKE_CREDITS, amount: 2000 } },
+    isAvailable: true,
+  },
+];
 
-  /**
-   * Get shop catalog with filters
-   */
+class ShopService {
   async getCatalog(filters: {
-    category?: string;
-    rarity?: string;
-    maxPrice?: { credits?: number; gems?: number };
+    category?: ShopCatalogItem['category'];
+    rarity?: ShopCatalogItem['rarity'];
     page?: number;
     limit?: number;
-  } = {}): Promise<{ items: ShopItem[]; pagination: any }> {
-    
-    const { category, rarity, maxPrice, page = 1, limit = 20 } = filters;
+  } = {}) {
+    const { category, rarity, page = 1, limit = 20 } = filters;
     const offset = (page - 1) * limit;
 
-    // Define shop items (could be from database in real implementation)
-    const shopItems: ShopItem[] = [
-      // Pokemon Packs
-      {
-        id: 'starter_pack',
-        name: 'Pack Starter',
-        description: '3 Pokémon aléatoires pour débuter',
-        category: 'POKEMON_PACK',
-        rarity: 'COMMON',
-        price: { credits: 500 },
-        metadata: { packSize: 3 },
-        isAvailable: true
-      },
-      {
-        id: 'premium_pack',
-        name: 'Pack Premium',
-        description: '5 Pokémon avec garantie d\'au moins 1 rare',
-        category: 'POKEMON_PACK',
-        rarity: 'RARE',
-        price: { gems: 10 },
-        metadata: { packSize: 5 },
-        isAvailable: true
-      },
-      {
-        id: 'legendary_pack',
-        name: 'Pack Légendaire',
-        description: '3 Pokémon avec garantie d\'1 légendaire',
-        category: 'POKEMON_PACK',
-        rarity: 'LEGENDARY',
-        price: { gems: 50 },
-        metadata: { packSize: 3 },
-        isAvailable: true
-      },
-
-      // Items
-      {
-        id: 'super_potion',
-        name: 'Super Potion',
-        description: 'Restaure 100 HP à un Pokémon',
-        category: 'ITEMS',
-        rarity: 'COMMON',
-        price: { credits: 200 },
-        metadata: { effect: 'heal_100' },
-        isAvailable: true
-      },
-      {
-        id: 'rare_candy',
-        name: 'Super Bonbon',
-        description: 'Augmente le niveau d\'un Pokémon de 1',
-        category: 'ITEMS',
-        rarity: 'RARE',
-        price: { gems: 5 },
-        metadata: { effect: 'level_up' },
-        isAvailable: true
-      },
-
-      // Boosts
-      {
-        id: 'xp_boost_1h',
-        name: 'Boost XP (1h)',
-        description: 'Double l\'XP gagnée pendant 1 heure',
-        category: 'BOOSTS',
-        rarity: 'UNCOMMON',
-        price: { gems: 3 },
-        metadata: { duration: 3600, effect: 'xp_x2' },
-        isAvailable: true
-      },
-      {
-        id: 'credit_boost_1h',
-        name: 'Boost Crédits (1h)',
-        description: 'Double les crédits gagnés pendant 1 heure',
-        category: 'BOOSTS',
-        rarity: 'UNCOMMON',
-        price: { gems: 3 },
-        metadata: { duration: 3600, effect: 'credits_x2' },
-        isAvailable: true
-      },
-
-      // Cosmetics
-      {
-        id: 'avatar_frame_gold',
-        name: 'Cadre Avatar Or',
-        description: 'Cadre doré pour votre avatar',
-        category: 'COSMETICS',
-        rarity: 'EPIC',
-        price: { gems: 25 },
-        metadata: { effect: 'avatar_frame' },
-        isAvailable: true
-      }
-    ];
-
-    // Apply filters
-    let filteredItems = shopItems.filter(item => item.isAvailable);
+    let items = SHOP_ITEMS.filter((item) => item.isAvailable);
 
     if (category) {
-      filteredItems = filteredItems.filter(item => item.category === category);
+      items = items.filter((item) => item.category === category);
     }
 
     if (rarity) {
-      filteredItems = filteredItems.filter(item => item.rarity === rarity);
+      items = items.filter((item) => item.rarity === rarity);
     }
 
-    if (maxPrice) {
-      filteredItems = filteredItems.filter(item => {
-        if (maxPrice.credits && item.price.credits && item.price.credits > maxPrice.credits) {
-          return false;
-        }
-        if (maxPrice.gems && item.price.gems && item.price.gems > maxPrice.gems) {
-          return false;
-        }
-        return true;
-      });
-    }
-
-    // Pagination
-    const total = filteredItems.length;
-    const paginatedItems = filteredItems.slice(offset, offset + limit);
+    const total = items.length;
+    const paginated = items.slice(offset, offset + limit);
 
     return {
-      items: paginatedItems,
+      items: paginated,
       pagination: {
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit)
-      }
+        pages: Math.max(1, Math.ceil(total / limit)),
+      },
     };
   }
 
-  /**
-   * Purchase item from shop
-   */
-  async purchaseItem(
-    userId: string,
-    itemId: string,
-    quantity: number = 1
-  ): Promise<PurchaseResult> {
-    
-    // Get item details
-    const catalog = await this.getCatalog();
-    const item = catalog.items.find(i => i.id === itemId);
-
+  async purchaseItem(userId: string, itemId: string, quantity = 1): Promise<PurchaseResult> {
+    const item = SHOP_ITEMS.find((catalogItem) => catalogItem.id === itemId && catalogItem.isAvailable);
     if (!item) {
-      throw new Error('Item not found');
+      throw new Error('Article introuvable');
     }
 
-    if (!item.isAvailable) {
-      throw new Error('Item not available');
-    }
+    const costs = item.prices.map((price) => ({
+      currency: price.currency,
+      amount: price.amount * quantity,
+    }));
 
-    // Calculate total cost
-    const totalCost = [];
-    if (item.price.credits) {
-      totalCost.push({
-        currency: 'POKE_CREDITS' as const,
-        amount: item.price.credits * quantity
-      });
-    }
-    if (item.price.gems) {
-      totalCost.push({
-        currency: 'POKE_GEMS' as const,
-        amount: item.price.gems * quantity
-      });
-    }
-
-    // Check if user can afford
-    const canAfford = await this.currencyService.canAfford(userId, totalCost);
+    const canAfford = await currencyService.canAfford(userId, costs);
     if (!canAfford) {
-      throw new Error('Insufficient currency');
+      throw new Error('Solde insuffisant');
     }
 
-    // Process purchase in transaction
-    return await prisma.$transaction(async (tx: any) => {
-      // Deduct currency
-      const transactions = [];
-      for (const cost of totalCost) {
-        const result = await this.currencyService.removeCurrency(
-          userId,
-          cost.currency,
-          cost.amount,
-          `Shop purchase: ${item.name} x${quantity}`,
-          { itemId, quantity }
-        );
-        transactions.push(result.transactionId);
+    return prisma.$transaction(async (tx) => {
+      for (const cost of costs) {
+        await currencyService.removeCurrency(userId, cost.currency, cost.amount, `shop:${item.id}`, {
+          metadata: { itemId: item.id, quantity },
+          transaction: tx,
+        });
       }
 
-      // Generate items based on purchase
-      const purchasedItems = await this.generatePurchaseItems(
-        item,
-        quantity,
-        userId
-      );
+      const rewards: Array<Record<string, unknown>> = [];
 
-      // Log purchase
-      logger.info(`User ${userId} purchased ${quantity}x ${item.name}`);
+      if (item.category === 'POKEMON_PACK') {
+        const packRewards = await this.openPokemonPack(tx, userId, item, quantity);
+        rewards.push(...packRewards);
+      } else if (item.category === 'CURRENCY') {
+        const reward = item.metadata?.reward as { currency: Currency; amount: number } | undefined;
+        if (reward) {
+          await currencyService.addCurrency(userId, reward.currency, reward.amount * quantity, `shop:${item.id}`, {
+            metadata: { itemId: item.id, quantity },
+            transaction: tx,
+          });
+          rewards.push({ type: 'currency', currency: reward.currency, amount: reward.amount * quantity });
+        }
+      }
+
+      logger.info('Shop purchase completed', { userId, itemId: item.id, quantity });
 
       return {
         success: true,
-        items: purchasedItems,
-        transaction: {
-          id: transactions[0], // Primary transaction ID
-          cost: totalCost
-        }
+        rewards,
+        cost: costs,
       };
     });
   }
 
-  /**
-   * Generate items from purchase
-   */
-  private async generatePurchaseItems(
-    item: ShopItem,
-    quantity: number,
-    userId: string
-  ): Promise<any[]> {
-    
-    const items = [];
+  private async openPokemonPack(
+    tx: Prisma.TransactionClient,
+    userId: string,
+    item: ShopCatalogItem,
+    quantity: number
+  ): Promise<Array<Record<string, unknown>>> {
+    const packSize = Number(item.metadata?.packSize ?? 3);
+    const maxGeneration = Number(item.metadata?.maxGeneration ?? 3);
+    const guaranteedRarity = item.metadata?.guaranteedRarity as string | undefined;
 
-    for (let i = 0; i < quantity; i++) {
-      switch (item.category) {
-        case 'POKEMON_PACK':
-          const packPokemon = await this.generatePackPokemon(item, userId);
-          items.push(...packPokemon);
-          break;
+    const rewards: Array<Record<string, unknown>> = [];
 
-        case 'ITEMS':
-          // Add to user inventory
-          const inventoryItem = await prisma.userInventory.create({
-            data: {
+    for (let packIndex = 0; packIndex < quantity; packIndex += 1) {
+      for (let i = 0; i < packSize; i += 1) {
+        const rarity = i === 0 && guaranteedRarity ? guaranteedRarity : this.rollPackRarity(item.rarity);
+        const pokemon = await this.pickRandomPokemon(maxGeneration);
+
+        if (!pokemon) {
+          continue;
+        }
+
+        const existing = await tx.userRoster.findUnique({
+          where: {
+            userId_pokemonId: {
               userId,
-              itemType: item.id,
-              itemName: item.name,
-              quantity: 1,
-              metadata: item.metadata
-            }
-          });
-          items.push(inventoryItem);
-          break;
-
-        case 'BOOSTS':
-          // Apply boost effect
-          const boost = await this.applyBoost(userId, item);
-          items.push(boost);
-          break;
-
-        case 'COSMETICS':
-          // Add cosmetic to collection
-          const cosmetic = await prisma.userCosmetics.create({
-            data: {
-              userId,
-              cosmeticType: item.id,
-              cosmeticName: item.name,
-              isEquipped: false,
-              metadata: item.metadata
-            }
-          });
-          items.push(cosmetic);
-          break;
-      }
-    }
-
-    return items;
-  }
-
-  /**
-   * Generate Pokemon from pack opening
-   */
-  private async generatePackPokemon(item: ShopItem, userId: string): Promise<any[]> {
-    const packSize = item.metadata.packSize || 3;
-    const guaranteedRarity = this.getGuaranteedRarity(item);
-    
-    const pokemon = [];
-    
-    for (let i = 0; i < packSize; i++) {
-      // Determine rarity for this Pokemon
-      let rarity;
-      if (i === 0 && guaranteedRarity) {
-        rarity = guaranteedRarity; // First card guaranteed
-      } else {
-        rarity = this.rollPackRarity(item.rarity);
-      }
-
-      // Get random Pokemon of this rarity (for now, get any Pokemon by generation)
-      const randomPokemon = await prisma.pokemon.findFirst({
-        where: { 
-          generation: { lte: 3 } // Only Gen 1-3 for now
-        },
-        skip: Math.floor(Math.random() * 100),
-        orderBy: { id: 'asc' }
-      });
-
-      if (randomPokemon) {
-        // Add to user's roster
-        const rosterEntry = await prisma.userRoster.create({
-          data: {
-            userId,
-            pokemonId: randomPokemon.id,
-            nickname: null,
-            level: this.getPackPokemonLevel(item.rarity),
-            experience: 0,
-            customStats: null,
-            obtainedFrom: `shop_${item.id}`,
-            obtainedAt: new Date(),
-            isLocked: false
+              pokemonId: pokemon.id,
+            },
           },
-          include: { pokemon: true }
         });
 
-        pokemon.push(rosterEntry);
+        if (existing) {
+          const updated = await tx.userRoster.update({
+            where: { id: existing.id },
+            data: { level: Math.min(existing.level + 1, 100) },
+            include: {
+              pokemon: true,
+            },
+          });
+          rewards.push({ type: 'upgrade', rosterId: updated.id, pokemonId: updated.pokemonId, rarity });
+        } else {
+          const rosterEntry = await tx.userRoster.create({
+            data: {
+              userId,
+              pokemonId: pokemon.id,
+              nickname: null,
+              level: this.initialLevelForRarity(rarity),
+              experience: 0,
+              customStats: null,
+              obtainedFrom: `shop_${item.id}`,
+              obtainedAt: new Date(),
+              isLocked: false,
+            },
+            include: {
+              pokemon: true,
+            },
+          });
+
+          rewards.push({ type: 'pokemon', rosterId: rosterEntry.id, pokemonId: rosterEntry.pokemonId, rarity });
+        }
       }
     }
 
-    return pokemon;
+    return rewards;
   }
 
-  /**
-   * Get guaranteed rarity for pack
-   */
-  private getGuaranteedRarity(item: ShopItem): string | null {
-    switch (item.id) {
-      case 'premium_pack':
-        return 'RARE';
-      case 'legendary_pack':
-        return 'LEGENDARY';
+  private async pickRandomPokemon(maxGeneration: number) {
+    const count = await prisma.pokemon.count({ where: { generation: { lte: maxGeneration } } });
+    if (count === 0) {
+      return null;
+    }
+
+    const offset = Math.floor(Math.random() * count);
+    return prisma.pokemon.findFirst({
+      where: { generation: { lte: maxGeneration } },
+      skip: offset,
+      orderBy: { id: 'asc' },
+    });
+  }
+
+  private initialLevelForRarity(rarity: string): number {
+    switch (rarity) {
+      case 'LEGENDARY':
+        return 20;
+      case 'EPIC':
+        return 18;
+      case 'RARE':
+        return 16;
+      case 'UNCOMMON':
+        return 14;
       default:
-        return null;
+        return 12;
     }
   }
 
-  /**
-   * Roll random rarity based on pack type
-   */
-  private rollPackRarity(packRarity: string): string {
-    const rarityChances = {
-      COMMON: { COMMON: 70, UNCOMMON: 25, RARE: 5 },
-      RARE: { COMMON: 50, UNCOMMON: 30, RARE: 15, EPIC: 5 },
-      LEGENDARY: { UNCOMMON: 40, RARE: 35, EPIC: 20, LEGENDARY: 5 }
+  private rollPackRarity(packRarity: ShopCatalogItem['rarity']): ShopCatalogItem['rarity'] {
+    const rarityChances: Record<string, Record<ShopCatalogItem['rarity'], number>> = {
+      COMMON: { COMMON: 70, UNCOMMON: 25, RARE: 5, EPIC: 0, LEGENDARY: 0 },
+      UNCOMMON: { COMMON: 50, UNCOMMON: 30, RARE: 15, EPIC: 5, LEGENDARY: 0 },
+      RARE: { COMMON: 35, UNCOMMON: 35, RARE: 20, EPIC: 8, LEGENDARY: 2 },
+      EPIC: { COMMON: 20, UNCOMMON: 30, RARE: 25, EPIC: 20, LEGENDARY: 5 },
+      LEGENDARY: { COMMON: 10, UNCOMMON: 20, RARE: 25, EPIC: 25, LEGENDARY: 20 },
     };
 
-    const chances = rarityChances[packRarity as keyof typeof rarityChances] 
-                   || rarityChances.COMMON;
-
-    const random = Math.random() * 100;
+    const table = rarityChances[packRarity] ?? rarityChances.COMMON;
+    const roll = Math.random() * 100;
     let cumulative = 0;
 
-    for (const [rarity, chance] of Object.entries(chances)) {
+    for (const [rarity, chance] of Object.entries(table)) {
       cumulative += chance;
-      if (random <= cumulative) {
-        return rarity;
+      if (roll <= cumulative) {
+        return rarity as ShopCatalogItem['rarity'];
       }
     }
 
     return 'COMMON';
-  }
-
-  /**
-   * Get Pokemon level based on pack rarity
-   */
-  private getPackPokemonLevel(packRarity: string): number {
-    const levelRanges = {
-      COMMON: [1, 10],
-      UNCOMMON: [5, 15],
-      RARE: [10, 20],
-      EPIC: [15, 25],
-      LEGENDARY: [20, 30]
-    };
-
-    const range = levelRanges[packRarity as keyof typeof levelRanges] || [1, 10];
-    return Math.floor(Math.random() * (range[1] - range[0] + 1)) + range[0];
-  }
-
-  /**
-   * Apply boost effect to user
-   */
-  private async applyBoost(userId: string, item: ShopItem): Promise<any> {
-    const duration = item.metadata.duration || 3600; // 1 hour default
-    const expiresAt = new Date(Date.now() + duration * 1000);
-
-    return await prisma.userBoosts.create({
-      data: {
-        userId,
-        boostType: item.metadata.effect || 'unknown',
-        multiplier: 2, // Default 2x
-        expiresAt,
-        isActive: true
-      }
-    });
-  }
-
-  /**
-   * Get user's purchase history
-   */
-  async getPurchaseHistory(
-    userId: string,
-    options: { page?: number; limit?: number } = {}
-  ): Promise<any> {
-    
-    const { page = 1, limit = 20 } = options;
-    const offset = (page - 1) * limit;
-
-    // Get transactions with shop purchases
-    const transactions = await prisma.transaction.findMany({
-      where: {
-        userId,
-        source: { startsWith: 'Shop purchase:' }
-      },
-      orderBy: { createdAt: 'desc' },
-      skip: offset,
-      take: limit
-    });
-
-    return {
-      purchases: transactions,
-      pagination: { page, limit, total: transactions.length }
-    };
   }
 }
 

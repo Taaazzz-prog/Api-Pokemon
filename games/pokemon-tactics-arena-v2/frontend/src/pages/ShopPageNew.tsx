@@ -13,10 +13,8 @@ const ShopPageNew: React.FC = () => {
 
   const categories = [
     { id: 'all', name: 'Tout', icon: '🛍️' },
-    { id: 'pack', name: 'Packs', icon: '📦' },
-    { id: 'item', name: 'Objets', icon: '🧪' },
-    { id: 'boost', name: 'Boosts', icon: '⚡' },
-    { id: 'cosmetic', name: 'Cosmétiques', icon: '✨' },
+    { id: 'pack', name: 'Packs Pokémon', icon: '📦' },
+    { id: 'currency', name: 'Devises', icon: '💱' },
   ];
 
   const handlePurchase = (itemId: string) => {
@@ -128,9 +126,8 @@ const ShopPageNew: React.FC = () => {
                   </div>
                   <div className="text-4xl">
                     {item.category === 'pack' && '📦'}
-                    {item.category === 'item' && '🧪'}
-                    {item.category === 'boost' && '⚡'}
-                    {item.category === 'cosmetic' && '✨'}
+                    {item.category === 'currency' && '💱'}
+                    {item.category === 'pack' && '📦'}
                   </div>
                 </div>
 

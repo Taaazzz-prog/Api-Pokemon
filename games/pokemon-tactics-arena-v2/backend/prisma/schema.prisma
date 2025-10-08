@@ -29,8 +29,13 @@ model User {
   survivalRuns    SurvivalRun[]
   tournaments     Tournament[]
   arenaQueue      ArenaQueue[]
+  arenaMatches    ArenaMatch[]
   transactions    Transaction[]
   achievements    UserAchievement[]
+  tournamentParticipants TournamentParticipant[]
+  tournamentMatchesPlayer1 TournamentMatch[] @relation("player1")
+  tournamentMatchesPlayer2 TournamentMatch[] @relation("player2")
+  tournamentMatchesWinner  TournamentMatch[] @relation("winner")
 
   @@map("users")
 }
@@ -234,8 +239,43 @@ model Tournament {
 
   // Relations
   user            User            @relation(fields: [userId], references: [id])
+  participantsRel TournamentParticipant[]
+  matches         TournamentMatch[]
 
   @@map("tournaments")
+}
+
+model TournamentParticipant {
+  id            String     @id @default(uuid())
+  tournamentId  String     @map("tournament_id")
+  userId        String     @map("user_id")
+  joinedAt      DateTime   @default(now()) @map("joined_at")
+
+  tournament    Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, userId])
+  @@map("tournament_participants")
+}
+
+model TournamentMatch {
+  id            String                 @id @default(uuid())
+  tournamentId  String                 @map("tournament_id")
+  round         Int                    @default(1)
+  player1Id     String?                @map("player1_id")
+  player2Id     String?                @map("player2_id")
+  winnerId      String?                @map("winner_id")
+  status        TournamentMatchStatus  @default(PENDING)
+  scheduledAt   DateTime?              @map("scheduled_at")
+  completedAt   DateTime?              @map("completed_at")
+  score         Json                   @default("{}")
+
+  tournament    Tournament             @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  player1       User?                  @relation("player1", fields: [player1Id], references: [id])
+  player2       User?                  @relation("player2", fields: [player2Id], references: [id])
+  winner        User?                  @relation("winner", fields: [winnerId], references: [id])
+
+  @@map("tournament_matches")
 }
 
 model ArenaQueue {
@@ -252,6 +292,21 @@ model ArenaQueue {
   user            User        @relation(fields: [userId], references: [id])
 
   @@map("arena_queue")
+}
+
+model ArenaMatch {
+  id           String           @id @default(uuid())
+  userId       String           @map("user_id")
+  opponentType ArenaOpponentType @map("opponent_type")
+  opponentName String           @map("opponent_name")
+  result       BattleResult
+  rewardCredits Int             @default(0) @map("reward_credits")
+  rewardGems   Int              @default(0) @map("reward_gems")
+  createdAt    DateTime         @default(now()) @map("created_at")
+
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("arena_matches")
 }
 
 model Transaction {
@@ -417,6 +472,16 @@ enum ShopCategory {
   ITEMS
   COSMETICS
   BUNDLES
+}
+
+enum ArenaOpponentType {
+  AI
+  PLAYER
+}
+
+enum TournamentMatchStatus {
+  PENDING
+  COMPLETED
 }
 
 enum EventType {

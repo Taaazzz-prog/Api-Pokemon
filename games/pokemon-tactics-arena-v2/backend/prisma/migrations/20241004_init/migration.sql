@@ -1,6 +1,3 @@
--- Generated from prisma schema via `prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script`
--- Aligns the initial database structure with the TypeScript services.
-
 -- CreateTable
 CREATE TABLE `users` (
     `id` VARCHAR(191) NOT NULL,
@@ -29,6 +26,7 @@ CREATE TABLE `user_profiles` (
     `win_rate` DOUBLE NOT NULL DEFAULT 0.0,
     `poke_credits` INTEGER NOT NULL DEFAULT 0,
     `poke_gems` INTEGER NOT NULL DEFAULT 0,
+    `has_received_starter_pack` BOOLEAN NOT NULL DEFAULT false,
     `settings` JSON NOT NULL,
     `stats` JSON NOT NULL,
     `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -40,29 +38,59 @@ CREATE TABLE `user_profiles` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
-CREATE TABLE `pokemons` (
-    `id` VARCHAR(191) NOT NULL,
-    `pokemon_id` INTEGER NOT NULL,
-    `name` VARCHAR(191) NOT NULL,
-    `types` JSON NOT NULL,
-    `stats` JSON NOT NULL,
-    `rarity` ENUM('COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY') NOT NULL,
+CREATE TABLE `pokemon` (
+    `id` INTEGER NOT NULL,
+    `name_fr` VARCHAR(191) NOT NULL,
+    `name_en` VARCHAR(191) NOT NULL,
+    `name_jp` VARCHAR(191) NOT NULL,
     `generation` INTEGER NOT NULL,
-    `image_url` VARCHAR(191) NULL,
-    `evolutions` JSON NOT NULL,
-    `moves` JSON NOT NULL,
-    `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-    `updated_at` DATETIME(3) NOT NULL,
+    `category` VARCHAR(191) NULL,
+    `height` VARCHAR(191) NULL,
+    `weight` VARCHAR(191) NULL,
+    `hp` INTEGER NOT NULL DEFAULT 0,
+    `attack_stat` INTEGER NOT NULL DEFAULT 0,
+    `defense_stat` INTEGER NOT NULL DEFAULT 0,
+    `special_attack` INTEGER NOT NULL DEFAULT 0,
+    `special_defense` INTEGER NOT NULL DEFAULT 0,
+    `speed` INTEGER NOT NULL DEFAULT 0,
+    `catch_rate` INTEGER NOT NULL DEFAULT 0,
+    `level_100_exp` INTEGER NOT NULL DEFAULT 0,
+    `sprite_regular` VARCHAR(191) NULL,
+    `sprite_shiny` VARCHAR(191) NULL,
+    `sprite_gmax` VARCHAR(191) NULL,
+    `male_rate` DECIMAL(5, 2) NOT NULL DEFAULT 0,
+    `female_rate` DECIMAL(5, 2) NOT NULL DEFAULT 0,
+    `created_at` TIMESTAMP(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
+    `updated_at` TIMESTAMP(0) NOT NULL,
 
-    UNIQUE INDEX `pokemons_pokemon_id_key`(`pokemon_id`),
     PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `pokemon_types` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(191) NOT NULL,
+    `image_url` VARCHAR(191) NULL,
+    `color` VARCHAR(191) NULL,
+
+    UNIQUE INDEX `pokemon_types_name_key`(`name`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `pokemon_type_relations` (
+    `pokemon_id` INTEGER NOT NULL,
+    `type_id` INTEGER NOT NULL,
+    `slot_number` INTEGER NOT NULL DEFAULT 1,
+
+    PRIMARY KEY (`pokemon_id`, `type_id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
 CREATE TABLE `user_roster` (
     `id` VARCHAR(191) NOT NULL,
     `user_id` VARCHAR(191) NOT NULL,
-    `pokemon_id` VARCHAR(191) NOT NULL,
+    `pokemon_id` INTEGER NOT NULL,
     `nickname` VARCHAR(191) NULL,
     `level` INTEGER NOT NULL DEFAULT 1,
     `experience` INTEGER NOT NULL DEFAULT 0,
@@ -96,7 +124,7 @@ CREATE TABLE `team_members` (
     `id` VARCHAR(191) NOT NULL,
     `team_preset_id` VARCHAR(191) NOT NULL,
     `user_roster_id` VARCHAR(191) NOT NULL,
-    `pokemon_id` VARCHAR(191) NOT NULL,
+    `pokemon_id` INTEGER NOT NULL,
     `position` INTEGER NOT NULL,
     `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
@@ -129,11 +157,13 @@ CREATE TABLE `battles` (
 CREATE TABLE `survival_runs` (
     `id` VARCHAR(191) NOT NULL,
     `user_id` VARCHAR(191) NOT NULL,
-    `status` ENUM('ACTIVE', 'COMPLETED', 'ABANDONED') NOT NULL,
+    `initial_team` JSON NOT NULL,
     `current_wave` INTEGER NOT NULL DEFAULT 1,
     `max_wave` INTEGER NOT NULL DEFAULT 1,
-    `total_rewards` JSON NOT NULL,
-    `team_snapshot` JSON NOT NULL,
+    `score` INTEGER NOT NULL DEFAULT 0,
+    `status` ENUM('ACTIVE', 'COMPLETED', 'ABANDONED') NOT NULL DEFAULT 'ACTIVE',
+    `rewards` JSON NOT NULL,
+    `payload` JSON NOT NULL,
     `started_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `completed_at` DATETIME(3) NULL,
     `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -146,16 +176,15 @@ CREATE TABLE `tournaments` (
     `id` VARCHAR(191) NOT NULL,
     `user_id` VARCHAR(191) NOT NULL,
     `name` VARCHAR(191) NOT NULL,
-    `description` VARCHAR(191) NULL,
     `format` ENUM('SINGLE_ELIMINATION', 'DOUBLE_ELIMINATION', 'ROUND_ROBIN') NOT NULL,
-    `status` ENUM('PENDING', 'ACTIVE', 'COMPLETED', 'CANCELLED') NOT NULL,
-    `entry_fee` INTEGER NOT NULL DEFAULT 0,
-    `prize_pool` JSON NOT NULL,
-    `ladder` JSON NOT NULL,
-    `rules` JSON NOT NULL,
-    `metadata` JSON NOT NULL,
-    `starts_at` DATETIME(3) NOT NULL,
-    `ends_at` DATETIME(3) NULL,
+    `status` ENUM('PENDING', 'ACTIVE', 'COMPLETED', 'CANCELLED') NOT NULL DEFAULT 'PENDING',
+    `current_round` INTEGER NOT NULL DEFAULT 1,
+    `max_rounds` INTEGER NOT NULL,
+    `participants` JSON NOT NULL,
+    `brackets` JSON NOT NULL,
+    `rewards` JSON NOT NULL,
+    `started_at` DATETIME(3) NULL,
+    `completed_at` DATETIME(3) NULL,
     `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
     PRIMARY KEY (`id`)
@@ -165,12 +194,12 @@ CREATE TABLE `tournaments` (
 CREATE TABLE `arena_queue` (
     `id` VARCHAR(191) NOT NULL,
     `user_id` VARCHAR(191) NOT NULL,
-    `status` ENUM('WAITING', 'MATCHED', 'CANCELLED') NOT NULL,
-    `game_mode` ENUM('FREE', 'SURVIVAL', 'TOURNAMENT', 'ARENA') NOT NULL,
-    `rating` INTEGER NOT NULL,
-    `preferences` JSON NOT NULL,
-    `metadata` JSON NOT NULL,
-    `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `team` JSON NOT NULL,
+    `elo_rating` INTEGER NOT NULL DEFAULT 1200,
+    `rank` VARCHAR(191) NOT NULL DEFAULT 'Bronze',
+    `queued_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `matched_at` DATETIME(3) NULL,
+    `status` ENUM('WAITING', 'MATCHED', 'CANCELLED') NOT NULL DEFAULT 'WAITING',
 
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -265,10 +294,16 @@ CREATE TABLE `user_achievements` (
 ALTER TABLE `user_profiles` ADD CONSTRAINT `user_profiles_user_id_fkey` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE `pokemon_type_relations` ADD CONSTRAINT `pokemon_type_relations_pokemon_id_fkey` FOREIGN KEY (`pokemon_id`) REFERENCES `pokemon`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `pokemon_type_relations` ADD CONSTRAINT `pokemon_type_relations_type_id_fkey` FOREIGN KEY (`type_id`) REFERENCES `pokemon_types`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE `user_roster` ADD CONSTRAINT `user_roster_user_id_fkey` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `user_roster` ADD CONSTRAINT `user_roster_pokemon_id_fkey` FOREIGN KEY (`pokemon_id`) REFERENCES `pokemons`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE `user_roster` ADD CONSTRAINT `user_roster_pokemon_id_fkey` FOREIGN KEY (`pokemon_id`) REFERENCES `pokemon`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `team_presets` ADD CONSTRAINT `team_presets_user_id_fkey` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
@@ -280,7 +315,7 @@ ALTER TABLE `team_members` ADD CONSTRAINT `team_members_team_preset_id_fkey` FOR
 ALTER TABLE `team_members` ADD CONSTRAINT `team_members_user_roster_id_fkey` FOREIGN KEY (`user_roster_id`) REFERENCES `user_roster`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `team_members` ADD CONSTRAINT `team_members_pokemon_id_fkey` FOREIGN KEY (`pokemon_id`) REFERENCES `pokemons`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE `team_members` ADD CONSTRAINT `team_members_pokemon_id_fkey` FOREIGN KEY (`pokemon_id`) REFERENCES `pokemon`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `battles` ADD CONSTRAINT `battles_user_id_fkey` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -302,3 +337,4 @@ ALTER TABLE `user_achievements` ADD CONSTRAINT `user_achievements_user_id_fkey` 
 
 -- AddForeignKey
 ALTER TABLE `user_achievements` ADD CONSTRAINT `user_achievements_achievement_id_fkey` FOREIGN KEY (`achievement_id`) REFERENCES `achievements`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+

@@ -1,264 +1,177 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 import { useUser } from '../contexts/UserContext';
 import { useRoster, useArenaStats } from '../hooks/useGameServices';
-import { useStarterPack } from '../hooks/useStarterPack';
-import { getRarityBorderClasses, getRarityConfig } from '../utils/rarityUtils';
 import Card from '../components/ui/Card';
-import Button from '../components/ui/Button';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
-import StarterPackModal from '../components/StarterPackModal';
-import { Link } from 'react-router-dom';
+import Button from '../components/ui/Button';
+import starterPackService from '../services/starterPackService';
 
-const DashboardPage: React.FC = () => {
-  const { user } = useUser();
-  const { data: roster, isLoading: rosterLoading } = useRoster();
-  const { data: arenaStats, isLoading: arenaLoading } = useArenaStats();
-  
-  // Hook pour gérer le starter pack
-  const { 
-    isModalOpen, 
-    starterPack, 
-    acceptStarterPack, 
-    closeModal 
-  } = useStarterPack();
+const DashboardPageNew: React.FC = () => {
+  const { user, refreshUser } = useUser();
+  const { data: roster, isLoading } = useRoster();
+  const { data: arenaStats } = useArenaStats();
+  const [needsStarterPack, setNeedsStarterPack] = useState(false);
+  const [applyingStarterPack, setApplyingStarterPack] = useState(false);
 
-  if (!user) return <LoadingSpinner />;
+  useEffect(() => {
+    const checkStarterPack = async () => {
+      if (!user) return;
+      try {
+        const status = await starterPackService.getStatus();
+        setNeedsStarterPack(status?.hasReceived === false);
+      } catch (error) {
+        console.error('Starter pack status failed', error);
+      }
+    };
 
-  const pokemonCount = roster?.length || 0;
-  const experiencePercentage = user ? (user.experience % 1000) / 10 : 0;
+    checkStarterPack();
+  }, [user]);
+
+  const handleApplyStarterPack = async () => {
+    try {
+      setApplyingStarterPack(true);
+      await starterPackService.apply();
+      await refreshUser();
+      toast.success('🎁 Pack de démarrage appliqué avec succès');
+      setNeedsStarterPack(false);
+    } catch (error: any) {
+      toast.error(error?.message || 'Impossible d\'appliquer le pack de démarrage');
+    } finally {
+      setApplyingStarterPack(false);
+    }
+  };
+
+  if (!user) {
+    return <LoadingSpinner />;
+  }
+
+  const pokemonSample = (roster ?? []).slice(0, 6);
+  const totalBattles = arenaStats?.wins && arenaStats?.losses != null ? (arenaStats.wins + arenaStats.losses) : user.stats?.totalBattles ?? 0;
+  const totalWins = arenaStats?.wins ?? user.stats?.totalWins ?? 0;
+  const winRate = totalBattles > 0 ? Math.round((totalWins / totalBattles) * 100) : 0;
 
   return (
-    <>
-      <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-lg">
-        <h1 className="text-2xl font-bold mb-2">
-          Bienvenue, {user.username}! 👋
-        </h1>
-        <p className="text-blue-100">
-          Prêt pour une nouvelle aventure Pokemon ?
+    <div className="space-y-6 p-6">
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 rounded-xl shadow-lg">
+        <h1 className="text-3xl font-bold mb-2">Bonjour {user.username} 👋</h1>
+        <p className="text-indigo-100">
+          Votre hub dresseur rassemble l'état réel de votre progression. Les fonctionnalités avancées seront déverrouillées au fur et à mesure de l'implémentation API.
         </p>
-      </div>
-
-      {/* Debug - Bouton pour tester le starter pack */}
-      {process.env.NODE_ENV === 'development' && (
-        <Card className="p-4 bg-yellow-50 border-yellow-200">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-yellow-800">
-              Mode développement - Tester le starter pack
-            </span>
-            <div className="flex space-x-2">
-              <Button
-                size="sm"
-                variant="warning"
-                onClick={async () => {
-                  // Vérifier l'état actuel de l'utilisateur connecté
-                  console.log('📊 Utilisateur actuel:', user);
-                }}
-              >
-                🔍 Vérifier Données
-              </Button>
-              <Button
-                size="sm"
-                variant="warning"
-                onClick={async () => {
-                  // Réinitialiser le flag starter pack
-                  await import('../services/realUserService').then(m => m.realUserService.updateUser({
-                    hasReceivedStarterPack: false,
-                    ownedPokemon: []
-                  }));
-                  window.location.reload();
-                }}
-              >
-                🎁 Réinitialiser Starter Pack
-              </Button>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Niveau */}
-        <Card className="p-6 text-center">
-          <div className="flex items-center justify-center mb-4">
-            <span className="text-3xl">⭐</span>
-          </div>
-          <h3 className="text-lg font-semibold text-gray-700 mb-2">Niveau</h3>
-          <p className="text-2xl font-bold text-gray-900">{user.level}</p>
-          <div className="mt-4">
-            <div className="text-sm text-gray-600 mb-1">
-              <span>{user.experience}/{(user.level + 1) * 1000}</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-yellow-400 h-2 rounded-full" 
-                style={{ width: `${experiencePercentage}%` }}
-              ></div>
-            </div>
-          </div>
-        </Card>
-
-        {/* Win Rate */}
-        <Card className="p-6 text-center">
-          <div className="flex items-center justify-center mb-4">
-            <span className="text-3xl">📊</span>
-          </div>
-          <h3 className="text-lg font-semibold text-gray-700 mb-2">Win Rate</h3>
-          <p className="text-2xl font-bold text-gray-900">
-            {arenaLoading ? '...' : `${arenaStats?.winRate || 0}%`}
-          </p>
-          <p className="text-sm text-gray-600 mt-2">
-            {arenaLoading ? '...' : `${(arenaStats?.wins || 0) + (arenaStats?.losses || 0)} combats`}
-          </p>
-        </Card>
-
-        {/* Rang Arena */}
-        <Card className="p-6 text-center">
-          <div className="flex items-center justify-center mb-4">
-            <span className="text-3xl">🏆</span>
-          </div>
-          <h3 className="text-lg font-semibold text-gray-700 mb-2">Rang Arena</h3>
-          <p className="text-2xl font-bold text-gray-900">
-            {arenaLoading ? '...' : arenaStats?.rank || 'Unranked'}
-          </p>
-        </Card>
-
-        {/* Pokémon */}
-        <Card className="p-6 text-center">
-          <div className="flex items-center justify-center mb-4">
-            <span className="text-3xl">👥</span>
-          </div>
-          <h3 className="text-lg font-semibold text-gray-700 mb-2">Pokémon</h3>
-          <p className="text-2xl font-bold text-gray-900">
-            {rosterLoading ? '...' : pokemonCount}
-          </p>
-          <p className="text-sm text-gray-600 mt-2">Collection</p>
-        </Card>
-      </div>
-
-      {/* Devises */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-700">PokéCredits</h3>
-              <p className="text-3xl font-bold text-yellow-600">{user.pokeCredits.toLocaleString()}</p>
-            </div>
-            <span className="text-4xl">💰</span>
-          </div>
-        </Card>
-
-        <Card className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-700">PokéGems</h3>
-              <p className="text-3xl font-bold text-purple-600">{user.pokeGems}</p>
-            </div>
-            <span className="text-4xl">💎</span>
-          </div>
-        </Card>
-      </div>
-
-      {/* Actions Rapides */}
-      <Card className="p-6">
-        <h3 className="text-xl font-bold text-gray-900 mb-4">Actions Rapides</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Link to="/arena">
-            <Button className="w-full h-16 text-lg flex items-center justify-center space-x-3 bg-red-600 hover:bg-red-700">
-              <span className="text-2xl">⚔️</span>
-              <span>Combat Arena</span>
-            </Button>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Link
+            to="/roster"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-white text-indigo-700 font-semibold rounded-lg shadow hover:bg-indigo-50"
+          >
+            📦 Gérer mon roster
           </Link>
-          
-          <Link to="/shop">
-            <Button className="w-full h-16 text-lg flex items-center justify-center space-x-3 bg-green-600 hover:bg-green-700">
-              <span className="text-2xl">🛍️</span>
-              <span>Boutique</span>
-            </Button>
-          </Link>
-          
-          <Link to="/survival">
-            <Button className="w-full h-16 text-lg flex items-center justify-center space-x-3 bg-orange-600 hover:bg-orange-700">
-              <span className="text-2xl">🔥</span>
-              <span>Mode Survie</span>
-            </Button>
+          <Link
+            to="/shop"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-500 text-white font-semibold rounded-lg shadow hover:bg-indigo-400"
+          >
+            🛒 Ouvrir la boutique
           </Link>
         </div>
-      </Card>
+      </div>
 
-      {/* Pokémon Favoris */}
-      {!rosterLoading && roster && roster.length > 0 && (
-        <Card className="p-6">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">Équipe Principale</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {roster.slice(0, 6).map((pokemon) => {
-              if (!pokemon) return null;
-              
-              const rarityConfig = getRarityConfig(pokemon);
-              const borderClasses = getRarityBorderClasses(pokemon);
-              
-              return (
-                <div key={pokemon.id} className={`text-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors ${borderClasses}`}>
-                  {/* Badge de rareté */}
-                  <div className="mb-2">
-                    <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${rarityConfig.bgColor} ${rarityConfig.textColor} border ${rarityConfig.borderColor}`}>
-                      {rarityConfig.label}
-                    </span>
-                  </div>
-                  
-                  {/* Image Pokemon */}
-                  <div className="relative mb-2">
-                    <img 
-                      src={pokemon.sprite || '/images/pokemon/unknown.png'} 
-                      alt={pokemon.name}
-                      className="w-16 h-16 mx-auto object-contain rounded-lg bg-white p-1 border border-gray-200"
-                      onError={(e) => {
-                        // Fallback si l'image ne charge pas
-                        e.currentTarget.src = '/images/pokemon/unknown.png';
-                      }}
-                    />
-                    {/* Badge Shiny */}
-                    {pokemon.isShiny && (
-                      <div className="absolute -top-1 -right-1 text-yellow-400">
-                        <span className="text-lg">✨</span>
-                      </div>
-                    )}
-                  </div>
-                  <p className="font-medium text-sm text-gray-900">{pokemon.nickname || pokemon.name}</p>
-                  <p className="text-xs text-gray-600">Niv. {pokemon.level}</p>
-                  <div className="flex justify-center mt-1 space-x-1">
-                    {(pokemon.types || []).map((type: any, index: number) => (
-                      <span 
-                        key={index} 
-                        className="px-1 py-0.5 text-xs bg-blue-100 text-blue-800 rounded"
-                      >
-                        {type}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          <div className="mt-4 text-center">
-            <Link to="/roster">
-              <Button variant="secondary">Voir toute la collection</Button>
-            </Link>
+      {needsStarterPack && (
+        <Card className="p-6 border-blue-200 bg-blue-50">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-semibold text-blue-800">Pack de démarrage disponible</h2>
+              <p className="text-sm text-blue-600">
+                Recevez automatiquement les ressources initiales prévues (PokéCredits, PokéGems et starters). Cliquez sur le bouton pour lancer l'opération via l'API.
+              </p>
+            </div>
+            <Button
+              onClick={handleApplyStarterPack}
+              disabled={applyingStarterPack}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {applyingStarterPack ? 'Application…' : '🎁 Accepter le pack'}
+            </Button>
           </div>
         </Card>
       )}
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="p-6">
+          <h2 className="text-lg font-semibold text-slate-700 mb-2">PokéCredits</h2>
+          <p className="text-3xl font-bold text-yellow-600">{user.pokeCredits.toLocaleString()}</p>
+          <p className="text-sm text-slate-500 mt-2">Gagnez-en via les missions quotidiennes ou la boutique.</p>
+        </Card>
+        <Card className="p-6">
+          <h2 className="text-lg font-semibold text-slate-700 mb-2">PokéGems</h2>
+          <p className="text-3xl font-bold text-purple-600">{user.pokeGems}</p>
+          <p className="text-sm text-slate-500 mt-2">Devise premium, attribuée par les événements spéciaux.</p>
+        </Card>
+        <Card className="p-6">
+          <h2 className="text-lg font-semibold text-slate-700 mb-2">Statistiques</h2>
+          <p className="text-2xl font-bold text-slate-900">{totalWins} victoires</p>
+          <p className="text-sm text-slate-500 mt-2">{totalBattles} combats enregistrés • {winRate}% de winrate</p>
+        </Card>
       </div>
 
-      {/* Modal de starter pack */}
-      <StarterPackModal
-        isOpen={isModalOpen}
-        starterPack={starterPack}
-        onAccept={acceptStarterPack}
-        onClose={closeModal}
-      />
-    </>
+      <Card className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-xl font-semibold text-slate-800">Derniers Pokémon acquis</h2>
+            <p className="text-sm text-slate-500">Les six entrées les plus récentes de votre roster réel.</p>
+          </div>
+          <Link to="/roster" className="text-indigo-600 hover:underline text-sm font-medium">
+            Voir tout
+          </Link>
+        </div>
+
+        {isLoading ? (
+          <div className="py-10">
+            <LoadingSpinner />
+          </div>
+        ) : pokemonSample.length === 0 ? (
+          <div className="py-10 text-center text-slate-500">
+            Aucun Pokémon dans votre roster pour le moment.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {pokemonSample.map((pokemon: any) => (
+              <Card key={pokemon.id} className="p-4 flex items-center gap-4">
+                <div className="w-16 h-16 bg-slate-100 rounded-lg flex items-center justify-center">
+                  <img
+                    src={pokemon.sprite || '/images/pokemon/unknown.png'}
+                    alt={pokemon.name}
+                    className="w-14 h-14 object-contain"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/images/pokemon/unknown.png';
+                    }}
+                  />
+                </div>
+                <div>
+                  <p className="font-semibold text-slate-800">{pokemon.name}</p>
+                  <p className="text-sm text-slate-500">Niveau {pokemon.level}</p>
+                  {pokemon.nickname && (
+                    <p className="text-xs text-indigo-600">Surnom : {pokemon.nickname}</p>
+                  )}
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      <Card className="p-6">
+        <h2 className="text-xl font-semibold text-slate-800 mb-3">Feuille de route</h2>
+        <p className="text-sm text-slate-600 mb-4">
+          Les modules Arène, Tournois et Survie seront activés une fois les endpoints dédiés finalisés (cf. <code>workflow.md</code>). Les pages correspondantes affichent actuellement un message d'attente pour éviter toute donnée simulée.
+        </p>
+        <Button asChild variant="secondary">
+          <a href="/workflow.md" target="_blank" rel="noreferrer">
+            Consulter le workflow détaillé
+          </a>
+        </Button>
+      </Card>
+    </div>
   );
 };
 
-export default DashboardPage;
+export default DashboardPageNew;

@@ -1,197 +1,151 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { realUserService } from '../services/realUserService';
-import { realShopService } from '../services/realShopService';
-import { realArenaService } from '../services/realArenaService';
-import { realTournamentService } from '../services/realTournamentService';
-import { realSurvivalService } from '../services/realSurvivalService';
-import { pokemonGameService, type Pokemon } from '../services/pokemonGameService';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
+import { realUserService } from '../services/realUserService';
+import realShopService from '../services/realShopService';
+import { apiClient } from '../services/apiClient';
 
-// Hooks pour la gestion du Roster
-export const useRoster = (filters?: any) => {
-  return useQuery({
+export const useRoster = (filters?: Record<string, unknown>) =>
+  useQuery({
     queryKey: ['roster', filters],
     queryFn: async () => {
-      try {
-        // Utiliser directement l'API roster qui retourne la structure corrigée
-        const rosterResponse = await realUserService.getUserRoster();
-        console.log('✅ Données roster récupérées:', rosterResponse);
-        
-        // L'API retourne {pokemon: [...], total: 3}
-        if (!rosterResponse || !rosterResponse.pokemon || rosterResponse.pokemon.length === 0) {
-          return [];
-        }
-        
-        return rosterResponse.pokemon.map((pokemon: any) => ({
-          id: pokemon.id,
-          pokedexId: pokemon.pokemonId,
-          name: pokemon.pokemonName,
-          nickname: pokemon.nickname,
-          level: pokemon.level,
-          experience: pokemon.experience || 0,
-          isShiny: false, // TODO: À implémenter
-          obtainedAt: pokemon.obtainedAt || new Date().toISOString(),
-          obtainedFrom: pokemon.obtainedFrom,
-          types: [], // TODO: À récupérer depuis l'API Pokemon
-          stats: {
-            hp: 0,
-            attack: 0,
-            defense: 0,
-            spAttack: 0,
-            spDefense: 0,
-            speed: 0,
-          },
-          moves: [],
-          nature: 'Hardy',
-          sprite: pokemon.spriteRegular, // Utiliser le sprite de la base de données
-          spriteShiny: pokemon.spriteShiny, // Sprite shiny disponible aussi
-        }));
-      } catch (error) {
-        console.error('❌ Erreur lors de la récupération du roster:', error);
+      const response = await realUserService.getUserRoster();
+      if (!response.pokemon?.length) {
         return [];
       }
-    },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
-};
 
-export const usePokemon = (id: string) => {
-  return useQuery({
-    queryKey: ['pokemon', id],
-    queryFn: async () => {
-      // TODO: Implémenter récupération Pokemon par ID
-      return null;
+      return response.pokemon.map((pokemon: any) => ({
+        id: pokemon.id,
+        pokedexId: pokemon.pokemonId,
+        name: pokemon.name?.display ?? pokemon.name?.fr ?? 'Pokemon',
+        nickname: pokemon.nickname,
+        level: pokemon.level,
+        experience: pokemon.experience ?? 0,
+        obtainedAt: pokemon.obtainedAt,
+        obtainedFrom: pokemon.obtainedFrom,
+        types: pokemon.types ?? [],
+        stats: {
+          hp: pokemon.stats?.hp ?? 0,
+          attack: pokemon.stats?.attack ?? 0,
+          defense: pokemon.stats?.defense ?? 0,
+          spAttack: pokemon.stats?.specialAttack ?? 0,
+          spDefense: pokemon.stats?.specialDefense ?? 0,
+          speed: pokemon.stats?.speed ?? 0,
+        },
+        sprite: pokemon.spriteRegular,
+        spriteShiny: pokemon.spriteShiny,
+      }));
     },
+    staleTime: 5 * 60 * 1000,
+  });
+
+export const usePokemon = (id: string) =>
+  useQuery({
+    queryKey: ['pokemon', id],
+    queryFn: () => (id ? apiClient.getPokemonById(Number(id)) : null),
     enabled: !!id,
   });
-};
 
 export const useUpdatePokemonNickname = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
-    mutationFn: async ({ id, nickname }: { id: string; nickname: string }) => {
-      // TODO: Implémenter mise à jour surnom via realUserService
-      console.log('Mise à jour surnom:', id, nickname);
-      return { success: true, message: 'Surnom mis à jour' };
-    },
+    mutationFn: ({ id, nickname }: { id: string; nickname: string }) =>
+      apiClient.updateRosterNickname(id, nickname),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['roster'] });
       toast.success('Surnom mis à jour!');
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Erreur lors de la mise à jour');
+      toast.error(error.message || "Erreur lors de la mise à jour");
     },
   });
 };
 
-// Hooks pour la Boutique
-export const useShopItems = (category?: string) => {
-  return useQuery({
+export const useShopItems = (category?: string) =>
+  useQuery({
     queryKey: ['shop', category],
-    queryFn: () => realShopService.getShopItems(),
-    staleTime: 10 * 60 * 1000, // 10 minutes
+    queryFn: () => realShopService.getShopItems(category),
+    staleTime: 10 * 60 * 1000,
   });
-};
 
 export const usePurchaseItem = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (itemId: string) => {
-      const currentUser = await realUserService.getUser();
-      if (!currentUser) throw new Error('Utilisateur non connecté');
-      return realShopService.purchaseItem(itemId, currentUser.id);
+      if (!realUserService.isAuthenticated()) {
+        throw new Error('Utilisateur non connecté');
+      }
+      return realShopService.purchaseItem(itemId);
     },
-    onSuccess: (data: any) => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['shop'] });
       queryClient.invalidateQueries({ queryKey: ['user'] });
-      
-      if (data.rewards) {
+
+      if (data?.rewards?.length) {
         toast.success('Pack ouvert! Vérifiez vos récompenses.');
       } else {
-        toast.success(data.message);
+        toast.success('Achat effectué avec succès');
       }
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Erreur lors de l\'achat');
+      toast.error(error.message || "Erreur lors de l'achat");
     },
   });
 };
 
-// Hooks pour l'Arena
-export const useArenaStats = () => {
-  return useQuery({
+export const useArenaStats = () =>
+  useQuery({
     queryKey: ['arena', 'stats'],
-    queryFn: () => realArenaService.getPlayerStats(),
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    queryFn: () => apiClient.get('/arena/stats'),
+    staleTime: 60 * 1000,
   });
-};
 
-export const useLeaderboard = () => {
-  return useQuery({
-    queryKey: ['arena', 'leaderboard'],
-    queryFn: () => realArenaService.getLeaderboard(),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+export const useArenaRankings = (limit = 10) =>
+  useQuery({
+    queryKey: ['arena', 'rankings', limit],
+    queryFn: () => apiClient.get('/arena/rankings', { limit }),
+    staleTime: 60 * 1000,
   });
-};
 
-export const useFindMatch = () => {
-  return useMutation({
-    mutationFn: () => realArenaService.findMatch(),
-    onSuccess: (data: any) => {
-      toast.success(`Match trouvé contre ${data.opponent.username}!`);
-    },
-    onError: (error: any) => {
-      toast.error(error.message || 'Erreur lors de la recherche de match');
-    },
+export const useArenaHistory = () =>
+  useQuery({
+    queryKey: ['arena', 'history'],
+    queryFn: () => apiClient.get('/arena/history'),
+    staleTime: 60 * 1000,
   });
-};
 
-// Hooks pour les Tournois
-export const useTournaments = () => {
-  return useQuery({
+export const useTournaments = () =>
+  useQuery({
     queryKey: ['tournaments'],
-    queryFn: () => realTournamentService.getTournaments(),
-    staleTime: 3 * 60 * 1000, // 3 minutes
+    queryFn: () => apiClient.get('/tournaments'),
+    staleTime: 5 * 60 * 1000,
   });
-};
 
-export const useJoinTournament = () => {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: (tournamentId: string) => realTournamentService.joinTournament(tournamentId),
-    onSuccess: (data: any) => {
-      queryClient.invalidateQueries({ queryKey: ['tournaments'] });
-      toast.success(data.message);
-    },
-    onError: (error: any) => {
-      toast.error(error.message || 'Erreur lors de l\'inscription');
-    },
+export const useTournament = (tournamentId: string) =>
+  useQuery({
+    queryKey: ['tournaments', tournamentId],
+    queryFn: () => apiClient.get(`/tournaments/${tournamentId}`),
+    enabled: !!tournamentId,
   });
-};
 
-// Hooks pour le Mode Survie
-export const useSurvivalStats = () => {
-  return useQuery({
-    queryKey: ['survival', 'stats'],
-    queryFn: () => realSurvivalService.getStats(),
-    staleTime: 2 * 60 * 1000, // 2 minutes
+export const useTournamentBracket = (tournamentId: string) =>
+  useQuery({
+    queryKey: ['tournaments', tournamentId, 'bracket'],
+    queryFn: () => apiClient.get(`/tournaments/${tournamentId}/bracket`),
+    enabled: !!tournamentId,
   });
-};
 
-export const useStartSurvivalRun = () => {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: () => realSurvivalService.startRun(),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['survival'] });
-      toast.success('Run de survie commencé!');
-    },
-    onError: (error: any) => {
-      toast.error(error.message || 'Erreur lors du démarrage');
-    },
+export const useSurvivalStatus = () =>
+  useQuery({
+    queryKey: ['survival', 'status'],
+    queryFn: () => apiClient.get('/survival/status'),
+    staleTime: 30 * 1000,
   });
-};
+
+export const useSurvivalHistory = () =>
+  useQuery({
+    queryKey: ['survival', 'history'],
+    queryFn: () => apiClient.get('/survival/history'),
+    staleTime: 60 * 1000,
+  });

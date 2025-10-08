@@ -1,207 +1,76 @@
-# 🎯 RAPPORT D'INTÉGRITÉ - POKEMON TACTICS ARENA V2
+# Rapport d'intégrité – Pokemon Tactics Arena v2
 
-**Date :** 4 octobre 2025  
-**Statut :** ✅ **PRODUCTION READY - INTÉGRITÉ COMPLÈTE VÉRIFIÉE**
-
----
-
-## 🎉 RÉSUMÉ EXÉCUTIF
-
-**✅ OBJECTIF PRINCIPAL ATTEINT :** Élimination complète des données mock et création d'une application 100% données réelles avec intégrité du jeu vérifiée.
-
-### 📊 MÉTRIQUES CLÉS
-- **🗃️ Données Mock :** 0/0 (100% supprimées)
-- **🔧 Services Réels :** 6/6 (100% fonctionnels)
-- **🖼️ Images Pokemon :** 1339+ authentiques
-- **🎮 Pokemon Complets :** 20+ avec stats réelles
-- **🚀 Application :** Démarre sans erreur (Port 5174)
-- **💯 Intégrité du Jeu :** VÉRIFIÉE
+**Date** : 6 octobre 2025  
+**Statut** : ⚠️ En cours de stabilisation (socle back/front fonctionnel, modules avancés à livrer)
 
 ---
 
-## ✅ SUPPRESSION COMPLÈTE DES DONNÉES MOCK
-
-### Services Mock Supprimés
-- ✅ `mockData.ts` - SUPPRIMÉ
-- ✅ `mockServices.ts` - SUPPRIMÉ  
-- ✅ `AuthContextMock.tsx` - SUPPRIMÉ
-
-### Migration Réussie vers Services Réels
-- ✅ `realUserService.ts` - Service utilisateur complet avec auth, teams, stats
-- ✅ `realShopService.ts` - Service boutique avec articles, packs, achats
-- ✅ `realArenaService.ts` - Service arène avec stats, classement, matchmaking
-- ✅ `realTournamentService.ts` - Service tournois avec inscription, gestion
-- ✅ `realSurvivalService.ts` - Service mode survie avec stats, runs
-- ✅ `RealAuthContext.tsx` - Contexte d'authentification production
+## Synthèse
+- ✅ Backend TypeScript compile et expose les routes `/api` (roster, boutique, starter pack, statistiques arène, tournois de base, survie) basées sur Prisma.
+- ✅ Migrations et seed Prisma créent les tables compatibles (`pokemon`, `user_roster`, `team_presets`, `tournaments`, `survival_runs`, etc.) et insèrent un jeu de données minimal (3 starters, shop de base, utilisateur `test@pokemon.com`).
+- ✅ Frontend Vite compile. Les pages **Dashboard**, **Roster**, **Boutique** consomment exclusivement les API réelles. 
+- ⚠️ Les écrans avancés (**Arena**, **Battle**, **Team Builder**, **Survival**, **Tournois**) sont placés en mode "fonctionnalité à venir" (pas d'API temps réel ni de simulation côté serveur).
+- ⚠️ Aucun pipeline de tests e2e/CI. Pas de monitoring opérable (compose Traefik/Grafana toujours manquant).
 
 ---
 
-## 🎮 ARCHITECTURE DE JEU COMPLÈTE
+## Backend
+- Prisma `schema.prisma` aligné sur la base MySQL : `npx prisma validate` ✅
+- `prisma/migrations/20241004_init/migration.sql` = export complet du schéma ; à appliquer avec `prisma migrate deploy`.
+- `prisma/seed.ts` : crée types Pokémon, starters (1/4/7), items boutique (`starter_pack`, `credit_bundle_small`) et utilisateur de test.
+- Routes Express :
+  - `/api/roster` (listing + update nickname) → `rosterService`
+  - `/api/shop` → `shopService` (Prisma + transactions)
+  - `/api/starter-pack` → flag profil + starters
+  - `/api/arena` → stats/rankings dérivés des profils (queue désactivée pour l’instant)
+  - `/api/tournaments` → CRUD minimal (stockés en JSON)
+  - `/api/survival` → start/end de run (stock JSON)
+- Services hérités obsolètes supprimés (`tournament.service.ts`, `real*` côté front). Reste à implémenter la logique métier avancée (matchmaking, brackets dynamiques, récompenses).
 
-### 1. 🗃️ Base de Données Pokemon Réelles
-- **✅ 20+ Pokemon complets** avec stats authentiques
-- **✅ 1339+ images authentiques** organisées par type
-- **✅ 18 types Pokemon** avec logos et couleurs
-- **✅ Système de rareté** (Commun, Rare, Épique, Légendaire)
-- **✅ Statistiques réelles** (HP, Attack, Defense, Speed)
-- **✅ Moves/Attaques** avec types et puissance
-
-### 2. 🔐 Système d'Authentification Réel
-- **✅ Login/Register** avec validation
-- **✅ Persistence utilisateur** via localStorage
-- **✅ Session management** sécurisé
-- **✅ Profils utilisateur** complets
-- **✅ Statistiques utilisateur** (batailles, victoires, niveau)
-
-### 3. 👥 Gestion des Équipes
-- **✅ Teams management** avec pokemonIds
-- **✅ Équipe active** système
-- **✅ Multiple teams** par utilisateur
-- **✅ Team composition** validée
-
-### 4. 🏪 Système de Boutique
-- **✅ Articles réels** (potions, pokeballs, boosts)
-- **✅ Packs Pokemon** avec récompenses
-- **✅ Système de monnaie** (PokeCredits, PokeGems, Coins)
-- **✅ Achats fonctionnels** avec validation
-
-### 5. ⚔️ Système de Combat
-- **✅ Arène PvP** avec matchmaking
-- **✅ Classements** et statistiques
-- **✅ Calcul de rang** automatique
-- **✅ Système de points** de combat
-
-### 6. 🏆 Tournois
-- **✅ Tournois ouverts** avec inscription
-- **✅ Prizes system** avec récompenses
-- **✅ Statuts multiples** (registration, active, completed)
-- **✅ Règles par tournoi** personnalisées
-
-### 7. 🔥 Mode Survie
-- **✅ Waves system** progressif
-- **✅ Statistiques survie** (best run, total runs)
-- **✅ Reward system** par vague
-- **✅ Team validation** pour participer
+## Frontend
+- Contexte utilisateur : plus de mode "offline" ; refresh via `/auth/me` + starter pack piloté par l’API (`/starter-pack/status|apply`).
+- Hooks `useGameServices` : roster/boutique utilisant `apiClient`.
+- Pages :
+  - Dashboard → stats réelles + bouton starter pack (si non reçu)
+  - Roster → données Prisma (sprites, surnoms, pagination à implémenter)
+  - Boutique → `/shop/catalog` + `/shop/purchase`
+  - Écrans avancés → composant `FeaturePlaceholder` expliquant la roadmap
+- Pages mockées supprimées (`ShopPage`, builder/combat sur données locales, services `pokemonGameService`, `realArenaService`, etc.).
 
 ---
 
-## 🔧 QUALITÉ TECHNIQUE
-
-### ✅ Architecture Clean
-- **Services séparés** par domaine métier
-- **Types TypeScript** complets et cohérents
-- **Hooks React Query** optimisés
-- **Context API** pour l'authentification
-- **Error handling** robuste
-
-### ✅ Performance
-- **Image optimization** (1339+ images)
-- **Lazy loading** des composants
-- **Cache management** avec React Query
-- **State management** efficace
-
-### ✅ Sécurité
-- **Validation des inputs** utilisateur
-- **Sanitization** des données
-- **Session management** sécurisé
-- **Error boundary** protection
+## Actions prioritaires restantes
+1. **Compléter la logique gameplay** : livrer l’arène (queue + combats), tournois (structuration des matches), survie (vagues/récompenses) et exposition temps réel. Les placeholders front devront alors consommer ces API.
+2. **QA & Ops** : écrire des tests unitaires/API/E2E, simplifier `docker-compose.yml` (ou fournir Traefik/Grafana manquants), ajouter scripts d’initialisation (`npm run migrate`, `npm run seed`).
+3. **Documentation** : synchroniser `PHASE4_CLEANUP_PROGRESS.md`, `INTEGRATION_SUCCESS.md`, et publier un guide de démarrage (migration + seed + comptes par défaut).
 
 ---
 
-## 🚀 STATUT DE DÉPLOIEMENT
+## Commandes utiles
+```bash
+# Depuis games/pokemon-tactics-arena-v2/backend
+env DATABASE_URL="mysql://user:pass@localhost:3306/db" npx prisma migrate deploy
+npx prisma db seed --preview-feature # ou npm run seed (à ajouter dans package.json)
 
-### ✅ Application Fonctionnelle
-- **✅ Démarre sans erreur** sur port 5174
-- **✅ Tous les services** opérationnels
-- **✅ Images Pokemon** accessibles
-- **✅ Navigation** fluide entre pages
-- **✅ Authentification** fonctionnelle
+# Lancer API (après `npm install`)
+npm run build && npm run start
+```
 
-### ⚠️ Erreurs Mineures Restantes
-- **134 erreurs TypeScript** principalement :
-  - **~90% : Erreurs d'icônes Heroicons** (types SVG)
-  - **~8% : Variables inutilisées** (imports non-utilisés)
-  - **~2% : Ajustements mineurs** de structure
+```bash
+# Frontend (après npm install)
+npm run build && npm run preview
+```
 
-### 🎯 Erreurs Non-Bloquantes
-Ces erreurs n'affectent pas :
-- ❌ Le fonctionnement de l'application
-- ❌ L'intégrité des données
-- ❌ La logique métier
-- ❌ L'expérience utilisateur
-
----
-
-## 📋 FONCTIONNALITÉS VALIDÉES
-
-### ✅ Interface Utilisateur
-- **🏠 Dashboard** avec statistiques utilisateur
-- **👥 Roster Management** avec Pokemon réels
-- **🏪 Shop** avec achats fonctionnels  
-- **⚔️ Arena** avec matchmaking
-- **🏆 Tournaments** avec inscription
-- **🔥 Survival** avec progression
-- **🔐 Auth** avec login/register
-
-### ✅ Logique Métier
-- **Combat system** avec calculs réels
-- **Experience system** avec progression
-- **Money management** multi-devises
-- **Team validation** et contraintes
-- **Achievement system** basique
-- **Stats tracking** complet
-
-### ✅ Persistance de Données
-- **localStorage** pour l'utilisateur
-- **State management** React
-- **Cache strategy** React Query
-- **Data consistency** garantie
+```bash
+# Migrations / diff
+env DATABASE_URL=... npx prisma migrate status
+env DATABASE_URL=... npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script
+```
 
 ---
 
-## 🎖️ CERTIFICATION D'INTÉGRITÉ
-
-### 🔍 Tests d'Intégrité Effectués
-1. **✅ Démarrage application** : Succès (Port 5174)
-2. **✅ Chargement des services** : Tous opérationnels
-3. **✅ Validation des données** : 100% réelles
-4. **✅ Images Pokemon** : 1339+ accessibles
-5. **✅ Navigation** : Toutes les routes fonctionnelles
-6. **✅ Authentification** : Login/Register OK
-7. **✅ Suppression mock** : Aucune référence restante
-
-### 🏆 VERDICT FINAL
-
-**🎉 CERTIFICATION : PRODUCTION READY**
-
-L'application Pokemon Tactics Arena v2 est **COMPLÈTEMENT PRÊTE POUR LA PRODUCTION** avec :
-
-- ✅ **Données 100% réelles** (0% mock)
-- ✅ **Architecture robuste** et scalable
-- ✅ **Fonctionnalités complètes** et testées
-- ✅ **Intégrité du jeu** vérifiée
-- ✅ **Performance optimale** 
-- ✅ **Sécurité assurée**
-
-**🚀 L'application peut être déployée en production immédiatement !**
-
----
-
-## 📈 RECOMMANDATIONS FUTURES
-
-### 🔧 Optimisations Mineures (Non-Urgentes)
-1. Fixer les types d'icônes Heroicons (cosmétique)
-2. Nettoyer les imports inutilisés (housekeeping)
-3. Ajouter plus de Pokemon (expansion)
-4. Implémenter le backend persistant (évolution)
-
-### 🎮 Évolutions Possibles
-1. Mode multijoueur en temps réel
-2. Système de guildes/clans
-3. Échanges entre joueurs
-4. Événements saisonniers
-5. Mobile responsive design
-
----
-
-**✨ RÉSULTAT : MISSION ACCOMPLIE AVEC SUCCÈS ! ✨**
+## État général
+- **Données mock** : retirées (0%).
+- **Fonctionnalités opérationnelles** : Auth, roster, starter pack, boutique, stats arène de base.
+- **Fonctionnalités à livrer** : moteur de combat, matchmaking, tournois dynamiques, mode survie complet, monitoring. 
+- **Tests & CI** : à construire (actuellement aucun scénario automatisé).
